@@ -23,6 +23,7 @@
             </constraints>
             <properties>
               <font name="Microsoft YaHei UI" size="28" style="0"/>
+              <visible value="true"/>
             </properties>
             <border type="none"/>
             <children>
@@ -142,7 +143,7 @@
               </component>
               <component id="302fd" class="javax.swing.JLabel" binding="labelStatus">
                 <constraints>
-                  <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                   <gridbag weightx="0.0" weighty="1.0"/>
                 </constraints>
                 <properties>
@@ -152,12 +153,33 @@
               </component>
               <component id="f2348" class="javax.swing.JLabel" binding="labelConnectInfo">
                 <constraints>
-                  <grid row="5" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <grid row="6" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                   <gridbag weightx="0.0" weighty="1.0"/>
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
                   <text value=""/>
+                </properties>
+              </component>
+              <component id="ad8f1" class="javax.swing.JLabel" binding="lableDbName">
+                <constraints>
+                  <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text value="数据库名"/>
+                </properties>
+              </component>
+              <component id="c30a5" class="javax.swing.JTextField" binding="textFieldDbName">
+                <constraints>
+                  <grid row="5" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="3" indent="0" use-parent-layout="false">
+                    <preferred-size width="150" height="-1"/>
+                  </grid>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
                 </properties>
               </component>
             </children>

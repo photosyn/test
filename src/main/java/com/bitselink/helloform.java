@@ -2,90 +2,145 @@ package com.bitselink;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.sql.*;
-import com.alibaba.fastjson.JSON;
+import com.bitselink.config.*;
+import com.bitselink.connection.Connector;
 
 public class helloform {
     public helloform() {
+        //根据站点配置信息显示
+        showSiteConfigData();
+        connector = new Connector();
+        labelConnectInfo.setText("未连接");
+
         buttonConnect.addActionListener(new ActionListener() {
             /**
              * Invoked when an action occurs.
              *
-             * @param e
+             * @param e action event
              */
             @Override
             public void actionPerformed(ActionEvent e) {
-                String selectDatabase = comboBoxDatabase.getSelectedItem().toString();
-                String connectInfo = "no connection!";
-                System.out.println(selectDatabase);
-                if ("SQL Server" == selectDatabase) {
-                    String driver_name = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-                    String url = "jdbc:sqlserver://192.168.3.4:1433;DatabaseName=ocv";
-                    String user_name = "sa";  //默认用户名
-                    String user_pwd = "123456";  //密码
-                    Connection db_conn;
-                    try {
-                        Class.forName(driver_name);
-                        db_conn = DriverManager.getConnection(url, user_name, user_pwd);
-                        labelConnectInfo.setText("连接成功");
-                        connectInfo = "connection successful!";
-                    } catch (Exception db_err) {
-                        connectInfo = db_err.getMessage();
-                        labelConnectInfo.setText("连接失败");
-                        //db_err.printStackTrace();
-                    }
-                } else if ("Mysql" == selectDatabase) {
-                    //MYSQL
-                    String driver_name = "com.mysql.cj.jdbc.Driver";
-                    String url = "jdbc:mysql://192.168.3.4:3306/world?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
-                    String user_name = "sa";  //默认用户名
-                    String user_pwd = "123456";  //密码
-                    Connection db_conn;
-                    try {
-                        Class.forName(driver_name);
-                        db_conn = DriverManager.getConnection(url, user_name, user_pwd);
-                        labelConnectInfo.setText("连接成功");
-                        connectInfo = "connection successful!";
-                    } catch (Exception db_err) {
-                        connectInfo = db_err.getMessage();
-                        labelConnectInfo.setText("连接失败");
-                        //db_err.printStackTrace();
-                    }
-                } else if ("Oracle" == selectDatabase) {
-                    //Oracle
-                    String driver_name = "oracle.jdbc.driver.OracleDriver";
-                    String url = "jdbc:oracle:thin:@192.168.3.4:1521:xe";
-                    String user_name = "sys as sysdba";  //默认用户名
-                    String user_pwd = "123456";  //密码
-                    Connection db_conn;
-                    try {
-                        Class.forName(driver_name);
-                        db_conn = DriverManager.getConnection(url, user_name, user_pwd);
-                        labelConnectInfo.setText("连接成功");
-                        connectInfo = "connection successful!";
-                    } catch (Exception db_err) {
-                        connectInfo = db_err.getMessage();
-                        labelConnectInfo.setText("连接失败");
-                        //db_err.printStackTrace();
-                    }
-                } else {
-                    selectDatabase = "Unknown database";
-                }
-
-                System.out.println(selectDatabase + ": " + connectInfo);
+                //doSiteConnect();
+                doConnectTest();
             }
         });
     }
 
+    private void showSiteConfigData() {
+        textFieldIp.setText(Root.siteConfig.ip);
+        textFieldPort.setText(Root.siteConfig.port);
+        textFieldUsr.setText(Root.siteConfig.user);
+        textFieldPwd.setText(Root.siteConfig.password);
+        textFieldDbName.setText(Root.siteConfig.dbName);
+        for (int i = 0; i < comboBoxDatabase.getItemCount(); i++) {
+            if (comboBoxDatabase.getItemAt(i).toString().equals(Root.siteConfig.dbType)) {
+                comboBoxDatabase.setSelectedIndex(i);
+            }
+        }
+    }
+
+    private void saveSiteConfigData() {
+        Root.siteConfig.dbType = comboBoxDatabase.getSelectedItem().toString();
+        Root.siteConfig.ip = textFieldIp.getText();
+        Root.siteConfig.port = textFieldPort.getText();
+        Root.siteConfig.user = textFieldUsr.getText();
+        Root.siteConfig.password = textFieldPwd.getText();
+        Root.siteConfig.dbName = textFieldDbName.getText();
+        Root.setSite();
+    }
+
+    private void doSiteConnect() {
+        Site site = new Site();
+        site.dbType = comboBoxDatabase.getSelectedItem().toString();
+        site.ip = textFieldIp.getText();
+        site.port = textFieldPort.getText();
+        site.user = textFieldUsr.getText();
+        site.password = textFieldPwd.getText();
+        site.dbName = textFieldDbName.getText();
+
+        if (connector.connectDb(site)) {
+            labelConnectInfo.setText("连接成功");
+            saveSiteConfigData();
+        } else {
+            labelConnectInfo.setText("连接失败");
+        }
+    }
+
+    private void doConnectTest() {
+        String selectDatabase = comboBoxDatabase.getSelectedItem().toString();
+        String connectInfo = "no connection!";
+        System.out.println(selectDatabase);
+        Connection db_conn;
+        if (selectDatabase.equals("SQL Server")) {
+            String driver_name = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+            String url = "jdbc:sqlserver://192.168.3.4:1433;DatabaseName=ocv";
+            String user_name = "sa";  //默认用户名
+            String user_pwd = "123456";  //密码
+            try {
+                Class.forName(driver_name);
+                db_conn = DriverManager.getConnection(url, user_name, user_pwd);
+                labelConnectInfo.setText("连接成功");
+                connectInfo = "connection successful!";
+//                saveSiteConfigData();
+            } catch (Exception db_err) {
+                connectInfo = db_err.getMessage();
+                labelConnectInfo.setText("连接失败");
+                //db_err.printStackTrace();
+            }
+        } else if (selectDatabase.equals("Mysql")) {
+            //MYSQL
+            String driver_name = "com.mysql.cj.jdbc.Driver";
+            String url = "jdbc:mysql://192.168.3.4:3306/world?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
+            String user_name = "sa";  //默认用户名
+            String user_pwd = "123456";  //密码
+            try {
+                Class.forName(driver_name);
+                db_conn = DriverManager.getConnection(url, user_name, user_pwd);
+                labelConnectInfo.setText("连接成功");
+                connectInfo = "connection successful!";
+//                saveSiteConfigData();
+            } catch (Exception db_err) {
+                connectInfo = db_err.getMessage();
+                labelConnectInfo.setText("连接失败");
+                //db_err.printStackTrace();
+            }
+        } else if (selectDatabase.equals("Oracle")) {
+            //Oracle
+            String driver_name = "oracle.jdbc.driver.OracleDriver";
+            String url = "jdbc:oracle:thin:@192.168.3.4:1521:xe";
+            String user_name = "sys as sysdba";  //默认用户名
+            String user_pwd = "123456";  //密码
+            try {
+                Class.forName(driver_name);
+                db_conn = DriverManager.getConnection(url, user_name, user_pwd);
+                labelConnectInfo.setText("连接成功");
+                connectInfo = "connection successful!";
+//                saveSiteConfigData();
+            } catch (Exception db_err) {
+                connectInfo = db_err.getMessage();
+                labelConnectInfo.setText("连接失败");
+                //db_err.printStackTrace();
+            }
+        } else {
+            selectDatabase = "Unknown database";
+        }
+
+        System.out.println(selectDatabase + ": " + connectInfo);
+    }
+
     public static void main(String[] args) {
+        //读取站点配置
+        Root.readSite();
         JFrame frame = new JFrame("helloform");
         frame.setContentPane(new helloform().topPanel);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
     }
+
+    private Connector connector;
 
     private JPanel topPanel;
     private JTabbedPane tabbedPane1;
@@ -103,6 +158,8 @@ public class helloform {
     private JTextField textFieldPwd;
     private JLabel labelStatus;
     private JLabel labelConnectInfo;
+    private JLabel lableDbName;
+    private JTextField textFieldDbName;
     private JTextField textFieldStatus;
 
     {
@@ -122,8 +179,8 @@ public class helloform {
     private void $$$setupUI$$$() {
         topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout(0, 0));
-        topPanel.setMinimumSize(new Dimension(680, 400));
-        topPanel.setPreferredSize(new Dimension(680, 400));
+        topPanel.setMinimumSize(new Dimension(640, 400));
+        topPanel.setPreferredSize(new Dimension(640, 400));
         tabbedPane1 = new JTabbedPane();
         Font tabbedPane1Font = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 28, tabbedPane1.getFont());
         if (tabbedPane1Font != null) tabbedPane1.setFont(tabbedPane1Font);
@@ -132,6 +189,7 @@ public class helloform {
         connectTab.setLayout(new GridBagLayout());
         Font connectTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, connectTab.getFont());
         if (connectTabFont != null) connectTab.setFont(connectTabFont);
+        connectTab.setVisible(true);
         tabbedPane1.addTab("连接设置", connectTab);
         comboBoxDatabase = new JComboBox();
         Font comboBoxDatabaseFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, comboBoxDatabase.getFont());
@@ -254,7 +312,7 @@ public class helloform {
         labelStatus.setText("连接状态");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         connectTab.add(labelStatus, gbc);
@@ -264,10 +322,30 @@ public class helloform {
         labelConnectInfo.setText("");
         gbc = new GridBagConstraints();
         gbc.gridx = 2;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         connectTab.add(labelConnectInfo, gbc);
+        lableDbName = new JLabel();
+        Font lableDbNameFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, lableDbName.getFont());
+        if (lableDbNameFont != null) lableDbName.setFont(lableDbNameFont);
+        lableDbName.setText("数据库名");
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        connectTab.add(lableDbName, gbc);
+        textFieldDbName = new JTextField();
+        Font textFieldDbNameFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, textFieldDbName.getFont());
+        if (textFieldDbNameFont != null) textFieldDbName.setFont(textFieldDbNameFont);
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 5;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        connectTab.add(textFieldDbName, gbc);
         statusTab = new JPanel();
         statusTab.setLayout(new GridBagLayout());
         Font statusTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, statusTab.getFont());
