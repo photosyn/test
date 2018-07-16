@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="com.bitselink.helloform">
+  <grid id="27dc6" binding="topPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+    <constraints>
+      <xy x="20" y="20" width="680" height="480"/>
+    </constraints>
+    <properties>
+      <minimumSize width="640" height="400"/>
+      <preferredSize width="640" height="400"/>
+    </properties>
+    <border type="none"/>
+    <children>
+      <tabbedpane id="aff36" binding="tabbedPane1" default-binding="true">
+        <constraints border-constraint="Center"/>
+        <properties>
+          <font name="Microsoft YaHei UI" size="28" style="1"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <grid id="803ad" binding="connectTab" layout-manager="GridBagLayout">
+            <constraints>
+              <tabbedpane title="连接设置"/>
+            </constraints>
+            <properties>
+              <font name="Microsoft YaHei UI" size="28" style="0"/>
+            </properties>
+            <border type="none"/>
+            <children>
+              <component id="81da6" class="javax.swing.JComboBox" binding="comboBoxDatabase">
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.3" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <model>
+                    <item value="SQL Server"/>
+                    <item value="Oracle"/>
+                    <item value="Mysql"/>
+                  </model>
+                </properties>
+              </component>
+              <hspacer id="aaea1">
+                <constraints>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="0.0"/>
+                </constraints>
+              </hspacer>
+              <component id="4242c" class="javax.swing.JButton" binding="buttonConnect">
+                <constraints>
+                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="1.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text value="连接数据库"/>
+                </properties>
+              </component>
+              <component id="e7182" class="javax.swing.JLabel" binding="labelPort">
+                <constraints>
+                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text value="通信端口"/>
+                </properties>
+              </component>
+              <component id="346d0" class="javax.swing.JLabel" binding="labelIp">
+                <constraints>
+                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text value="IP地址"/>
+                </properties>
+              </component>
+              <component id="7ddcb" class="javax.swing.JTextField" binding="textFieldIp">
+                <constraints>
+                  <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="3" indent="0" use-parent-layout="false">
+                    <preferred-size width="150" height="-1"/>
+                  </grid>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                </properties>
+              </component>
+              <component id="185dc" class="javax.swing.JTextField" binding="textFieldPort">
+                <constraints>
+                  <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="3" indent="0" use-parent-layout="false">
+                    <preferred-size width="150" height="-1"/>
+                  </grid>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                </properties>
+              </component>
+              <component id="d419b" class="javax.swing.JLabel" binding="labelUsr">
+                <constraints>
+                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text value="用户名"/>
+                </properties>
+              </component>
+              <component id="cd3cf" class="javax.swing.JTextField" binding="textFieldUsr">
+                <constraints>
+                  <grid row="3" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="3" indent="0" use-parent-layout="false">
+                    <preferred-size width="150" height="-1"/>
+                  </grid>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                </properties>
+              </component>
+              <component id="88a4f" class="javax.swing.JLabel" binding="labelPwd">
+                <constraints>
+                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text value="密码"/>
+                </properties>
+              </component>
+              <component id="4f55" class="javax.swing.JTextField" binding="textFieldPwd">
+                <constraints>
+                  <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="3" indent="0" use-parent-layout="false">
+                    <preferred-size width="150" height="-1"/>
+                  </grid>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                </properties>
+              </component>
+              <component id="302fd" class="javax.swing.JLabel" binding="labelStatus">
+                <constraints>
+                  <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text value="连接状态"/>
+                </properties>
+              </component>
+              <component id="f2348" class="javax.swing.JLabel" binding="labelConnectInfo">
+                <constraints>
+                  <grid row="5" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text value=""/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+          <grid id="67629" binding="statusTab" layout-manager="GridBagLayout">
+            <constraints>
+              <tabbedpane title="状态显示"/>
+            </constraints>
+            <properties>
+              <font name="Microsoft YaHei UI" size="28" style="0"/>
+            </properties>
+            <border type="none"/>
+            <children/>
+          </grid>
+        </children>
+      </tabbedpane>
+    </children>
+  </grid>
+</form>
