@@ -19,7 +19,7 @@
         <children>
           <grid id="803ad" binding="connectTab" layout-manager="GridBagLayout">
             <constraints>
-              <tabbedpane title="连接设置"/>
+              <tabbedpane title-resource-bundle="myProp" title-key="ui.site"/>
             </constraints>
             <properties>
               <font name="Microsoft YaHei UI" size="28" style="0"/>
@@ -29,7 +29,7 @@
             <children>
               <component id="81da6" class="javax.swing.JComboBox" binding="comboBoxDatabase">
                 <constraints>
-                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="3" indent="0" use-parent-layout="false"/>
                   <gridbag weightx="0.3" weighty="1.0"/>
                 </constraints>
                 <properties>
@@ -54,7 +54,7 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
-                  <text value="连接数据库"/>
+                  <text resource-bundle="myProp" key="ui.connect"/>
                 </properties>
               </component>
               <component id="e7182" class="javax.swing.JLabel" binding="labelPort">
@@ -64,7 +64,7 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
-                  <text value="通信端口"/>
+                  <text resource-bundle="myProp" key="ui.port"/>
                 </properties>
               </component>
               <component id="346d0" class="javax.swing.JLabel" binding="labelIp">
@@ -74,7 +74,8 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
-                  <text value="IP地址"/>
+                  <labelFor value="81da6"/>
+                  <text resource-bundle="myProp" key="ui.ip"/>
                 </properties>
               </component>
               <component id="7ddcb" class="javax.swing.JTextField" binding="textFieldIp">
@@ -106,7 +107,7 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
-                  <text value="用户名"/>
+                  <text resource-bundle="myProp" key="ui.user"/>
                 </properties>
               </component>
               <component id="cd3cf" class="javax.swing.JTextField" binding="textFieldUsr">
@@ -127,7 +128,7 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
-                  <text value="密码"/>
+                  <text resource-bundle="myProp" key="ui.password"/>
                 </properties>
               </component>
               <component id="4f55" class="javax.swing.JTextField" binding="textFieldPwd">
@@ -148,7 +149,7 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
-                  <text value="连接状态"/>
+                  <text resource-bundle="myProp" key="ui.siteStatus"/>
                 </properties>
               </component>
               <component id="f2348" class="javax.swing.JLabel" binding="labelConnectInfo">
@@ -168,7 +169,7 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
-                  <text value="数据库名"/>
+                  <text resource-bundle="myProp" key="ui.dbName"/>
                 </properties>
               </component>
               <component id="c30a5" class="javax.swing.JTextField" binding="textFieldDbName">
@@ -186,7 +187,7 @@
           </grid>
           <grid id="67629" binding="statusTab" layout-manager="GridBagLayout">
             <constraints>
-              <tabbedpane title="状态显示"/>
+              <tabbedpane title-resource-bundle="myProp" title-key="ui.statusInfo"/>
             </constraints>
             <properties>
               <font name="Microsoft YaHei UI" size="28" style="0"/>

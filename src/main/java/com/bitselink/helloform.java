@@ -4,6 +4,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
+import java.util.Locale;
+import java.util.ResourceBundle;
+
 import com.bitselink.config.*;
 import com.bitselink.connection.Connector;
 
@@ -11,8 +14,9 @@ public class helloform {
     public helloform() {
         //根据站点配置信息显示
         showSiteConfigData();
+        resourceBundle = ResourceBundle.getBundle("myProp", new Locale("zh", "CN"));
         connector = new Connector();
-        labelConnectInfo.setText("未连接");
+        labelConnectInfo.setText(resourceBundle.getString("msg.noConnection"));
 
         buttonConnect.addActionListener(new ActionListener() {
             /**
@@ -22,8 +26,8 @@ public class helloform {
              */
             @Override
             public void actionPerformed(ActionEvent e) {
-                //doSiteConnect();
-                doConnectTest();
+                doSiteConnect();
+                //doConnectTest();
             }
         });
     }
@@ -61,10 +65,10 @@ public class helloform {
         site.dbName = textFieldDbName.getText();
 
         if (connector.connectDb(site)) {
-            labelConnectInfo.setText("连接成功");
+            labelConnectInfo.setText(resourceBundle.getString("msg.connectSuccess"));
             saveSiteConfigData();
         } else {
-            labelConnectInfo.setText("连接失败");
+            labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
         }
     }
 
@@ -81,12 +85,12 @@ public class helloform {
             try {
                 Class.forName(driver_name);
                 db_conn = DriverManager.getConnection(url, user_name, user_pwd);
-                labelConnectInfo.setText("连接成功");
+                labelConnectInfo.setText(resourceBundle.getString("msg.connectSuccess"));
                 connectInfo = "connection successful!";
 //                saveSiteConfigData();
             } catch (Exception db_err) {
                 connectInfo = db_err.getMessage();
-                labelConnectInfo.setText("连接失败");
+                labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
                 //db_err.printStackTrace();
             }
         } else if (selectDatabase.equals("Mysql")) {
@@ -98,12 +102,12 @@ public class helloform {
             try {
                 Class.forName(driver_name);
                 db_conn = DriverManager.getConnection(url, user_name, user_pwd);
-                labelConnectInfo.setText("连接成功");
+                labelConnectInfo.setText(resourceBundle.getString("msg.connectSuccess"));
                 connectInfo = "connection successful!";
 //                saveSiteConfigData();
             } catch (Exception db_err) {
                 connectInfo = db_err.getMessage();
-                labelConnectInfo.setText("连接失败");
+                labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
                 //db_err.printStackTrace();
             }
         } else if (selectDatabase.equals("Oracle")) {
@@ -115,12 +119,12 @@ public class helloform {
             try {
                 Class.forName(driver_name);
                 db_conn = DriverManager.getConnection(url, user_name, user_pwd);
-                labelConnectInfo.setText("连接成功");
+                labelConnectInfo.setText(resourceBundle.getString("msg.connectSuccess"));
                 connectInfo = "connection successful!";
 //                saveSiteConfigData();
             } catch (Exception db_err) {
                 connectInfo = db_err.getMessage();
-                labelConnectInfo.setText("连接失败");
+                labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
                 //db_err.printStackTrace();
             }
         } else {
@@ -140,6 +144,7 @@ public class helloform {
         frame.setVisible(true);
     }
 
+    private ResourceBundle resourceBundle;
     private Connector connector;
 
     private JPanel topPanel;
@@ -190,7 +195,7 @@ public class helloform {
         Font connectTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, connectTab.getFont());
         if (connectTabFont != null) connectTab.setFont(connectTabFont);
         connectTab.setVisible(true);
-        tabbedPane1.addTab("连接设置", connectTab);
+        tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.site"), connectTab);
         comboBoxDatabase = new JComboBox();
         Font comboBoxDatabaseFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, comboBoxDatabase.getFont());
         if (comboBoxDatabaseFont != null) comboBoxDatabase.setFont(comboBoxDatabaseFont);
@@ -206,7 +211,7 @@ public class helloform {
         gbc.weightx = 0.3;
         gbc.weighty = 1.0;
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.fill = GridBagConstraints.BOTH;
         connectTab.add(comboBoxDatabase, gbc);
         final JPanel spacer1 = new JPanel();
         gbc = new GridBagConstraints();
@@ -218,7 +223,7 @@ public class helloform {
         buttonConnect = new JButton();
         Font buttonConnectFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, buttonConnect.getFont());
         if (buttonConnectFont != null) buttonConnect.setFont(buttonConnectFont);
-        buttonConnect.setText("连接数据库");
+        this.$$$loadButtonText$$$(buttonConnect, ResourceBundle.getBundle("myProp").getString("ui.connect"));
         gbc = new GridBagConstraints();
         gbc.gridx = 2;
         gbc.gridy = 0;
@@ -229,7 +234,7 @@ public class helloform {
         labelPort = new JLabel();
         Font labelPortFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelPort.getFont());
         if (labelPortFont != null) labelPort.setFont(labelPortFont);
-        labelPort.setText("通信端口");
+        this.$$$loadLabelText$$$(labelPort, ResourceBundle.getBundle("myProp").getString("ui.port"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 2;
@@ -239,7 +244,7 @@ public class helloform {
         labelIp = new JLabel();
         Font labelIpFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelIp.getFont());
         if (labelIpFont != null) labelIp.setFont(labelIpFont);
-        labelIp.setText("IP地址");
+        this.$$$loadLabelText$$$(labelIp, ResourceBundle.getBundle("myProp").getString("ui.ip"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -269,7 +274,7 @@ public class helloform {
         labelUsr = new JLabel();
         Font labelUsrFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelUsr.getFont());
         if (labelUsrFont != null) labelUsr.setFont(labelUsrFont);
-        labelUsr.setText("用户名");
+        this.$$$loadLabelText$$$(labelUsr, ResourceBundle.getBundle("myProp").getString("ui.user"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 3;
@@ -289,7 +294,7 @@ public class helloform {
         labelPwd = new JLabel();
         Font labelPwdFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelPwd.getFont());
         if (labelPwdFont != null) labelPwd.setFont(labelPwdFont);
-        labelPwd.setText("密码");
+        this.$$$loadLabelText$$$(labelPwd, ResourceBundle.getBundle("myProp").getString("ui.password"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 4;
@@ -309,7 +314,7 @@ public class helloform {
         labelStatus = new JLabel();
         Font labelStatusFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelStatus.getFont());
         if (labelStatusFont != null) labelStatus.setFont(labelStatusFont);
-        labelStatus.setText("连接状态");
+        this.$$$loadLabelText$$$(labelStatus, ResourceBundle.getBundle("myProp").getString("ui.siteStatus"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 6;
@@ -329,7 +334,7 @@ public class helloform {
         lableDbName = new JLabel();
         Font lableDbNameFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, lableDbName.getFont());
         if (lableDbNameFont != null) lableDbName.setFont(lableDbNameFont);
-        lableDbName.setText("数据库名");
+        this.$$$loadLabelText$$$(lableDbName, ResourceBundle.getBundle("myProp").getString("ui.dbName"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 5;
@@ -350,7 +355,8 @@ public class helloform {
         statusTab.setLayout(new GridBagLayout());
         Font statusTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, statusTab.getFont());
         if (statusTabFont != null) statusTab.setFont(statusTabFont);
-        tabbedPane1.addTab("状态显示", statusTab);
+        tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.statusInfo"), statusTab);
+        labelIp.setLabelFor(comboBoxDatabase);
     }
 
     /**
@@ -370,6 +376,60 @@ public class helloform {
             }
         }
         return new Font(resultName, style >= 0 ? style : currentFont.getStyle(), size >= 0 ? size : currentFont.getSize());
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    private void $$$loadLabelText$$$(JLabel component, String text) {
+        StringBuffer result = new StringBuffer();
+        boolean haveMnemonic = false;
+        char mnemonic = '\0';
+        int mnemonicIndex = -1;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == '&') {
+                i++;
+                if (i == text.length()) break;
+                if (!haveMnemonic && text.charAt(i) != '&') {
+                    haveMnemonic = true;
+                    mnemonic = text.charAt(i);
+                    mnemonicIndex = result.length();
+                }
+            }
+            result.append(text.charAt(i));
+        }
+        component.setText(result.toString());
+        if (haveMnemonic) {
+            component.setDisplayedMnemonic(mnemonic);
+            component.setDisplayedMnemonicIndex(mnemonicIndex);
+        }
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    private void $$$loadButtonText$$$(AbstractButton component, String text) {
+        StringBuffer result = new StringBuffer();
+        boolean haveMnemonic = false;
+        char mnemonic = '\0';
+        int mnemonicIndex = -1;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == '&') {
+                i++;
+                if (i == text.length()) break;
+                if (!haveMnemonic && text.charAt(i) != '&') {
+                    haveMnemonic = true;
+                    mnemonic = text.charAt(i);
+                    mnemonicIndex = result.length();
+                }
+            }
+            result.append(text.charAt(i));
+        }
+        component.setText(result.toString());
+        if (haveMnemonic) {
+            component.setMnemonic(mnemonic);
+            component.setDisplayedMnemonicIndex(mnemonicIndex);
+        }
     }
 
     /**

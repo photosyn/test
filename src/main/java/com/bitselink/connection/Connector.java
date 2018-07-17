@@ -31,10 +31,12 @@ public class Connector {
         String urlFormat = mapUrl.get(site.dbType);
         String url = String.format(urlFormat, site.ip, site.port, site.dbName);
         System.out.println("Connect database:");
-        System.out.println("driver:" + driverName);
-        System.out.println("url" + url);
-        System.out.println("user" + site.user);
-        System.out.println("password" + site.password);
+        System.out.println("{");
+        System.out.println("driver: " + driverName);
+        System.out.println("url: " + url);
+        System.out.println("user: " + site.user);
+        System.out.println("password: " + site.password);
+        System.out.println("}");
         try {
             Class.forName(driverName);
             connection = DriverManager.getConnection(url, site.user, site.password);
