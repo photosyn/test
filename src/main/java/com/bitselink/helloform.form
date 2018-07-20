@@ -23,14 +23,14 @@
             </constraints>
             <properties>
               <font name="Microsoft YaHei UI" size="28" style="0"/>
-              <visible value="true"/>
+              <visible value="false"/>
             </properties>
             <border type="none"/>
             <children>
               <component id="81da6" class="javax.swing.JComboBox" binding="comboBoxDatabase">
                 <constraints>
                   <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="3" indent="0" use-parent-layout="false"/>
-                  <gridbag weightx="0.3" weighty="1.0"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
@@ -74,7 +74,7 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
-                  <labelFor value="81da6"/>
+                  <labelFor value=""/>
                   <text resource-bundle="myProp" key="ui.ip"/>
                 </properties>
               </component>
@@ -181,6 +181,97 @@
                 </constraints>
                 <properties>
                   <font name="Microsoft YaHei UI" size="36" style="1"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+          <grid id="a77fc" binding="cloudTab" layout-manager="GridBagLayout">
+            <constraints>
+              <tabbedpane title-resource-bundle="myProp" title-key="ui.cloud"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="3a964" class="javax.swing.JLabel" binding="labelCloudIp">
+                <constraints>
+                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.3" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <horizontalAlignment value="10"/>
+                  <horizontalTextPosition value="11"/>
+                  <text resource-bundle="myProp" key="ui.ip"/>
+                  <verticalAlignment value="0"/>
+                  <verticalTextPosition value="0"/>
+                </properties>
+              </component>
+              <hspacer id="e6be3">
+                <constraints>
+                  <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="0.0"/>
+                </constraints>
+              </hspacer>
+              <component id="5cb63" class="javax.swing.JTextField" binding="textFieldCloudIp">
+                <constraints>
+                  <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="3" indent="0" use-parent-layout="false">
+                    <preferred-size width="150" height="-1"/>
+                  </grid>
+                  <gridbag weightx="1.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                </properties>
+              </component>
+              <component id="2fdbd" class="javax.swing.JLabel" binding="labelCloudPort">
+                <constraints>
+                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text resource-bundle="myProp" key="ui.port"/>
+                </properties>
+              </component>
+              <component id="9328c" class="javax.swing.JTextField" binding="textFieldCloudPort">
+                <constraints>
+                  <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="3" indent="0" use-parent-layout="false">
+                    <preferred-size width="150" height="-1"/>
+                  </grid>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                </properties>
+              </component>
+              <component id="3558" class="javax.swing.JLabel" binding="labelCloudStatus">
+                <constraints>
+                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text resource-bundle="myProp" key="ui.cloudStatus"/>
+                </properties>
+              </component>
+              <component id="fd50b" class="javax.swing.JLabel" binding="labelCloudInfo">
+                <constraints>
+                  <grid row="3" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="0.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text resource-bundle="myProp" key="msg.noConnection"/>
+                </properties>
+              </component>
+              <component id="68a06" class="javax.swing.JButton" binding="buttonCloudSave">
+                <constraints>
+                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <gridbag weightx="1.0" weighty="1.0"/>
+                </constraints>
+                <properties>
+                  <font name="Microsoft YaHei UI" size="36" style="1"/>
+                  <text resource-bundle="myProp" key="ui.save"/>
                 </properties>
               </component>
             </children>

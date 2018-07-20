@@ -7,16 +7,32 @@ import java.sql.*;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
+import com.bitselink.Client.EchoClient;
 import com.bitselink.config.*;
 import com.bitselink.connection.Connector;
 
-public class helloform {
+public class helloform implements ICallBack {
+    @Override
+    public void setCloudConnected(boolean connected) {
+        if (connected) {
+            labelCloudInfo.setText(resourceBundle.getString("msg.connectSuccess"));
+            if (connector.isConnected()) {
+                timer.restart();
+            }
+        } else {
+            labelCloudInfo.setText(resourceBundle.getString("msg.connectFault"));
+            timer.stop();
+        }
+    }
+
     public helloform() {
         //根据站点配置信息显示
-        showSiteConfigData();
+        showConfigData();
         resourceBundle = ResourceBundle.getBundle("myProp", new Locale("zh", "CN"));
         connector = new Connector();
         labelConnectInfo.setText(resourceBundle.getString("msg.noConnection"));
+        echoClient = new EchoClient(this);
+        echoClient.start();
 
         buttonConnect.addActionListener(new ActionListener() {
             /**
@@ -30,29 +46,61 @@ public class helloform {
                 //doConnectTest();
             }
         });
+        buttonCloudSave.addActionListener(new ActionListener() {
+            /**
+             * Invoked when an action occurs.
+             *
+             * @param e
+             */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveCouldConfigData();
+            }
+        });
+
+        ActionListener actionListener = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (connector.checkParkingData()) {
+                    echoClient.sendParkingData(connector.getParkingData());
+                } else {
+                    Config.syncTimeUpdate(false);
+                }
+            }
+        };
+        timer = new Timer(10000, actionListener);
     }
 
-    private void showSiteConfigData() {
-        textFieldIp.setText(Root.siteConfig.ip);
-        textFieldPort.setText(Root.siteConfig.port);
-        textFieldUsr.setText(Root.siteConfig.user);
-        textFieldPwd.setText(Root.siteConfig.password);
-        textFieldDbName.setText(Root.siteConfig.dbName);
+    private void showConfigData() {
+        textFieldIp.setText(Config.rootConfig.site.ip);
+        textFieldPort.setText(Config.rootConfig.site.port);
+        textFieldUsr.setText(Config.rootConfig.site.user);
+        textFieldPwd.setText(Config.rootConfig.site.password);
+        textFieldDbName.setText(Config.rootConfig.site.dbName);
         for (int i = 0; i < comboBoxDatabase.getItemCount(); i++) {
-            if (comboBoxDatabase.getItemAt(i).toString().equals(Root.siteConfig.dbType)) {
+            if (comboBoxDatabase.getItemAt(i).toString().equals(Config.rootConfig.site.dbType)) {
                 comboBoxDatabase.setSelectedIndex(i);
             }
         }
+
+        textFieldCloudIp.setText(Config.rootConfig.cloud.ip);
+        textFieldCloudPort.setText(Config.rootConfig.cloud.port);
     }
 
     private void saveSiteConfigData() {
-        Root.siteConfig.dbType = comboBoxDatabase.getSelectedItem().toString();
-        Root.siteConfig.ip = textFieldIp.getText();
-        Root.siteConfig.port = textFieldPort.getText();
-        Root.siteConfig.user = textFieldUsr.getText();
-        Root.siteConfig.password = textFieldPwd.getText();
-        Root.siteConfig.dbName = textFieldDbName.getText();
-        Root.setSite();
+        Config.rootConfig.site.dbType = comboBoxDatabase.getSelectedItem().toString();
+        Config.rootConfig.site.ip = textFieldIp.getText();
+        Config.rootConfig.site.port = textFieldPort.getText();
+        Config.rootConfig.site.user = textFieldUsr.getText();
+        Config.rootConfig.site.password = textFieldPwd.getText();
+        Config.rootConfig.site.dbName = textFieldDbName.getText();
+        Config.save();
+    }
+
+    private void saveCouldConfigData() {
+        Config.rootConfig.cloud.ip = textFieldCloudIp.getText();
+        Config.rootConfig.cloud.port = textFieldCloudPort.getText();
+        Config.save();
     }
 
     private void doSiteConnect() {
@@ -64,10 +112,12 @@ public class helloform {
         site.password = textFieldPwd.getText();
         site.dbName = textFieldDbName.getText();
 
-        //if (connector.connectDb(site)) {
         if (connector.connectDbMybatis(site)) {
             labelConnectInfo.setText(resourceBundle.getString("msg.connectSuccess"));
             saveSiteConfigData();
+            if (labelCloudInfo.getText().equals(resourceBundle.getString("msg.connectSuccess"))) {
+                timer.start();
+            }
         } else {
             labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
         }
@@ -162,7 +212,7 @@ public class helloform {
         connectTab.setLayout(new GridBagLayout());
         Font connectTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, connectTab.getFont());
         if (connectTabFont != null) connectTab.setFont(connectTabFont);
-        connectTab.setVisible(true);
+        connectTab.setVisible(false);
         tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.site"), connectTab);
         comboBoxDatabase = new JComboBox();
         Font comboBoxDatabaseFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, comboBoxDatabase.getFont());
@@ -176,7 +226,6 @@ public class helloform {
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.weightx = 0.3;
         gbc.weighty = 1.0;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.BOTH;
@@ -319,12 +368,97 @@ public class helloform {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.BOTH;
         connectTab.add(textFieldDbName, gbc);
+        cloudTab = new JPanel();
+        cloudTab.setLayout(new GridBagLayout());
+        tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.cloud"), cloudTab);
+        labelCloudIp = new JLabel();
+        Font labelCloudIpFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelCloudIp.getFont());
+        if (labelCloudIpFont != null) labelCloudIp.setFont(labelCloudIpFont);
+        labelCloudIp.setHorizontalAlignment(10);
+        labelCloudIp.setHorizontalTextPosition(11);
+        this.$$$loadLabelText$$$(labelCloudIp, ResourceBundle.getBundle("myProp").getString("ui.ip"));
+        labelCloudIp.setVerticalAlignment(0);
+        labelCloudIp.setVerticalTextPosition(0);
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.3;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(labelCloudIp, gbc);
+        final JPanel spacer2 = new JPanel();
+        gbc = new GridBagConstraints();
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        cloudTab.add(spacer2, gbc);
+        textFieldCloudIp = new JTextField();
+        Font textFieldCloudIpFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, textFieldCloudIp.getFont());
+        if (textFieldCloudIpFont != null) textFieldCloudIp.setFont(textFieldCloudIpFont);
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(textFieldCloudIp, gbc);
+        labelCloudPort = new JLabel();
+        Font labelCloudPortFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelCloudPort.getFont());
+        if (labelCloudPortFont != null) labelCloudPort.setFont(labelCloudPortFont);
+        this.$$$loadLabelText$$$(labelCloudPort, ResourceBundle.getBundle("myProp").getString("ui.port"));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(labelCloudPort, gbc);
+        textFieldCloudPort = new JTextField();
+        Font textFieldCloudPortFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, textFieldCloudPort.getFont());
+        if (textFieldCloudPortFont != null) textFieldCloudPort.setFont(textFieldCloudPortFont);
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 2;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(textFieldCloudPort, gbc);
+        labelCloudStatus = new JLabel();
+        Font labelCloudStatusFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelCloudStatus.getFont());
+        if (labelCloudStatusFont != null) labelCloudStatus.setFont(labelCloudStatusFont);
+        this.$$$loadLabelText$$$(labelCloudStatus, ResourceBundle.getBundle("myProp").getString("ui.cloudStatus"));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(labelCloudStatus, gbc);
+        labelCloudInfo = new JLabel();
+        Font labelCloudInfoFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelCloudInfo.getFont());
+        if (labelCloudInfoFont != null) labelCloudInfo.setFont(labelCloudInfoFont);
+        this.$$$loadLabelText$$$(labelCloudInfo, ResourceBundle.getBundle("myProp").getString("msg.noConnection"));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 3;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(labelCloudInfo, gbc);
+        buttonCloudSave = new JButton();
+        Font buttonCloudSaveFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, buttonCloudSave.getFont());
+        if (buttonCloudSaveFont != null) buttonCloudSave.setFont(buttonCloudSaveFont);
+        this.$$$loadButtonText$$$(buttonCloudSave, ResourceBundle.getBundle("myProp").getString("ui.save"));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(buttonCloudSave, gbc);
         statusTab = new JPanel();
         statusTab.setLayout(new GridBagLayout());
         Font statusTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, statusTab.getFont());
         if (statusTabFont != null) statusTab.setFont(statusTabFont);
         tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.statusInfo"), statusTab);
-        labelIp.setLabelFor(comboBoxDatabase);
     }
 
     /**
@@ -415,11 +549,11 @@ public class helloform {
     }
 
     public static void main(String[] args) {
-        //读取站点配置
-        Root.readSite();
+        //读取配置
+        Config.read();
         JFrame frame = new JFrame("helloform");
         frame.setContentPane(new helloform().topPanel);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.pack();
         frame.addWindowListener(new CloseWindowListener());
         frame.setVisible(true);
@@ -427,6 +561,8 @@ public class helloform {
 
     private ResourceBundle resourceBundle;
     static private Connector connector;
+    private Timer timer;
+    private EchoClient echoClient;
 
     private JPanel topPanel;
     private JTabbedPane tabbedPane1;
@@ -446,6 +582,14 @@ public class helloform {
     private JLabel labelConnectInfo;
     private JLabel lableDbName;
     private JTextField textFieldDbName;
+    private JPanel cloudTab;
+    private JTextField textFieldCloudIp;
+    private JTextField textFieldCloudPort;
+    private JLabel labelCloudIp;
+    private JLabel labelCloudPort;
+    private JLabel labelCloudStatus;
+    private JLabel labelCloudInfo;
+    private JButton buttonCloudSave;
     private JTextField textFieldStatus;
 
 }
