@@ -9,11 +9,16 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 
+import java.io.UnsupportedEncodingException;
+import java.util.Base64;
+
 public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private EchoClient client;
+    private String leftStr;
     public EchoClientHandler(EchoClient client) {
         super();
         this.client = client;
+        leftStr = "";
     }
 
     @Override
@@ -23,16 +28,32 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) {
-        String resp = msg.toString(CharsetUtil.UTF_8);
+        leftStr += msg.toString(CharsetUtil.UTF_8);
         System.out.println("Client received:" + msg.toString(CharsetUtil.UTF_8) + "\r\n");
-        JSONObject jsonObject = JSON.parseObject(resp);
-        String msgtype = jsonObject.getString("msgtype");
-        if (msgtype.equals("parkingData")){
-            boolean success = jsonObject.getBoolean("success");
-            if (success){
-                Config.syncParamUpdate(false);
+
+        if (leftStr.length() >= 8) {
+            int frameLen = Integer.parseInt(leftStr.substring(0,8));
+            if (leftStr.length() >= frameLen + 8){
+                String encodeStr = leftStr.substring(8,8+frameLen);
+                leftStr = leftStr.substring(8+frameLen);
+                String json = null;
+                try {
+                    json = new String(Base64.getDecoder().decode(encodeStr),"utf-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                JSONObject jsonObject = JSON.parseObject(json);
+                String msgType = jsonObject.getString("msgtype");
+                if (msgType.equals("parkingData")){
+                    boolean success = jsonObject.getBoolean("success");
+                    if (success){
+                        Config.syncParamUpdate(false);
+                    }
+                }
+
             }
         }
+
     }
 
     @Override

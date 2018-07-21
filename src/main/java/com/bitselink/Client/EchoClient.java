@@ -14,6 +14,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.CharsetUtil;
+import java.io.UnsupportedEncodingException;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 public class EchoClient {
@@ -35,7 +37,15 @@ public class EchoClient {
             {
                 parkingGroupData.setMsgId(msgId++);
                 String packStr = JSON.toJSONString(parkingGroupData);
-                channel.writeAndFlush(Unpooled.copiedBuffer(packStr, CharsetUtil.UTF_8));
+//                packStr = "{\"msgtype\":\"parkingData\",\"success\":true}";
+                String encoded = "";
+                try {
+                    encoded = Base64.getEncoder().encodeToString(packStr.getBytes("utf-8"));
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                String sendStr = String.format("%1$08d",encoded.length()) + encoded;
+                channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
             }
         }
     }
