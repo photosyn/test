@@ -2,11 +2,11 @@ package com.bitselink.connection;
 
 import com.bitselink.config.Config;
 import com.bitselink.config.Site;
+import com.bitselink.domain.ParkingGroupData;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.ibatis.io.Resources;
@@ -23,7 +23,7 @@ public class Connector {
     private Map<String, String> mapDriverName;
     private Map<String, String> mapUrl;
     private SqlSessionFactory sqlSessionFactory;
-    private List resultList;
+    private ParkingGroupData parkingGroupData;
     private boolean isConnected;
 
     public boolean isConnected() {
@@ -32,6 +32,8 @@ public class Connector {
 
     public Connector() {
         isConnected = false;
+        parkingGroupData = new ParkingGroupData();
+        parkingGroupData.setName("parkingGroupData");
         //添加各种数据库厂商JDBC驱动名称
         mapDriverName = new HashMap<>();
         mapDriverName.put(DB_SQL_SERVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
@@ -73,41 +75,55 @@ public class Connector {
         return isConnected;
     }
 
-    public boolean checkParkingData(){
-        boolean rst = false;
+    public long checkParkingDataWithCondition(String mybatisMapper, Map condition){
+        long tableIndex = -1;
         SqlSession session = sqlSessionFactory.openSession();
         try{
-            Map map=new HashMap();
-            System.out.println("from:" + Config.rootConfig.syncTime.from + " to:" + Config.rootConfig.syncTime.to);
-            map.put("timeFrom", Config.rootConfig.syncTime.from);
-            map.put("timeTo", Config.rootConfig.syncTime.to);
-//            map.put("timeFrom", "2018-07-10 11:10:00");
-//            map.put("timeTo", "2018-7-10 23:59:59");
-            resultList = session.selectList("mybatis.groupMapper.selectParkingData", map);
-//            GroupTest group = session.selectOne("mybatis.groupMapper.selectGroup", "0008");
-            if(resultList.size() > 0)
-            {
-                rst = true;
-            }
+            parkingGroupData.getParkingDataList().addAll(session.selectList(mybatisMapper, condition));
         } finally {
             session.close();
         }
-        return rst;
+        for (int i=0;i<parkingGroupData.getParkingDataList().size();i++){
+            tableIndex = Math.max(tableIndex, parkingGroupData.getParkingDataList().get(i).getId());
+        }
+        return tableIndex;
     }
 
-    public String getParkingData(){
-        String parkingStr = "";
-        if(resultList.size() > 0)
-        {
-            for(int i=0;i<resultList.size();i++){
-                Map map=(Map)(resultList.get(i));
-                if(i != 0){
-                    parkingStr += ",";
-                }
-                parkingStr += "{" + "\"id\":" + i + ",\"InTime\":" + map.get("InTime") + "}" + "\r\n";
-            }
+    public ParkingGroupData checkParkingData(){
+        long rstInTable = -1;
+        long rstOutTable = -1;
+        parkingGroupData.getParkingDataList().clear();
+        Map condition=new HashMap();
+        if (Config.rootConfig.syncParam.carInTableId > 0 && Config.rootConfig.syncParam.mathod.equals("id")){
+            condition.put("recordId", Config.rootConfig.syncParam.carInTableId);
+            System.out.println("carIn(recordId): > " + Config.rootConfig.syncParam.carInTableId);
         }
-        return parkingStr;
+        else {
+            condition.put("timeFrom", Config.rootConfig.syncParam.from);
+            condition.put("timeTo", Config.rootConfig.syncParam.to);
+            System.out.println("from:" + Config.rootConfig.syncParam.from + " to:" + Config.rootConfig.syncParam.to);
+        }
+        rstInTable = checkParkingDataWithCondition("mybatis.parkingDataMapper.selectCarInByCondition", condition);
+
+        condition.clear();
+        if (Config.rootConfig.syncParam.carOutTableId > 0 && Config.rootConfig.syncParam.mathod.equals("id")){
+            condition.put("recordId", Config.rootConfig.syncParam.carOutTableId);
+            System.out.println("carOut(recordId): > " + Config.rootConfig.syncParam.carOutTableId);
+        }
+        else {
+            condition.put("timeFrom", Config.rootConfig.syncParam.from);
+            condition.put("timeTo", Config.rootConfig.syncParam.to);
+            System.out.println("from:" + Config.rootConfig.syncParam.from + " to:" + Config.rootConfig.syncParam.to);
+        }
+        rstOutTable = checkParkingDataWithCondition("mybatis.parkingDataMapper.selectCarOutByCondition", condition);
+
+        Config.carInTableIndex = Math.max(Config.carInTableIndex, rstInTable);
+        Config.carOutTableIndex = Math.max(Config.carOutTableIndex, rstOutTable);
+        if (rstInTable < 0 && rstOutTable < 0){
+            Config.syncParamUpdate(false);
+        }
+
+        return parkingGroupData;
     }
 
     public void closeDb(){

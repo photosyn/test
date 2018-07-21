@@ -30,7 +30,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         if (msgtype.equals("parkingData")){
             boolean success = jsonObject.getBoolean("success");
             if (success){
-                Config.syncTimeUpdate(false);
+                Config.syncParamUpdate(false);
             }
         }
     }

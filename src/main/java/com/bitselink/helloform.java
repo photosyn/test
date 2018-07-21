@@ -61,11 +61,7 @@ public class helloform implements ICallBack {
         ActionListener actionListener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (connector.checkParkingData()) {
-                    echoClient.sendParkingData(connector.getParkingData());
-                } else {
-                    Config.syncTimeUpdate(false);
-                }
+                echoClient.sendParkingData(connector.checkParkingData());
             }
         };
         timer = new Timer(10000, actionListener);
@@ -115,9 +111,8 @@ public class helloform implements ICallBack {
         if (connector.connectDbMybatis(site)) {
             labelConnectInfo.setText(resourceBundle.getString("msg.connectSuccess"));
             saveSiteConfigData();
-            if (labelCloudInfo.getText().equals(resourceBundle.getString("msg.connectSuccess"))) {
-                timer.start();
-            }
+            echoClient.sendParkingData(connector.checkParkingData());
+            timer.start();
         } else {
             labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
         }

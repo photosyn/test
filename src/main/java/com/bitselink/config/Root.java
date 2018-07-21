@@ -3,14 +3,14 @@ package com.bitselink.config;
 public class Root {
     public Site site;
     public Cloud cloud;
-    public SyncTime syncTime;
+    public SyncParam syncParam;
 
-    public SyncTime getSyncTime() {
-        return syncTime;
+    public SyncParam getSyncParam() {
+        return syncParam;
     }
 
-    public void setSyncTime(SyncTime syncTime) {
-        this.syncTime = syncTime;
+    public void setSyncParam(SyncParam syncParam) {
+        this.syncParam = syncParam;
     }
 
     public Site getSite() {

@@ -1,10 +1,15 @@
 package com.bitselink.Client;
 
+import com.alibaba.fastjson.JSON;
 import com.bitselink.ICallBack;
 import com.bitselink.config.Config;
+import com.bitselink.domain.ParkingGroupData;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -24,11 +29,14 @@ public class EchoClient {
         this.callBackObject = obj;
     }
 
-    public void sendParkingData(String str){
+    public void sendParkingData(ParkingGroupData parkingGroupData){
         if (channel != null && channel.isActive()) {
-            msgId++;
-            String packStr = "{ \"msgid\":123,\"msgtype\":\"parkingData\"" + ",\"data\":" + str + "}\r\n";
-            channel.writeAndFlush(Unpooled.copiedBuffer(packStr, CharsetUtil.UTF_8));
+            if (parkingGroupData.getParkingDataList().size() > 0)
+            {
+                parkingGroupData.setMsgId(msgId++);
+                String packStr = JSON.toJSONString(parkingGroupData);
+                channel.writeAndFlush(Unpooled.copiedBuffer(packStr, CharsetUtil.UTF_8));
+            }
         }
     }
 
@@ -61,30 +69,26 @@ public class EchoClient {
             return;
         }
 
-        try {
-            ChannelFuture future = bootstrap.connect(Config.rootConfig.cloud.ip, port).sync();
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture futureListener) throws Exception {
-                    if (futureListener.isSuccess()){
-                        channel = futureListener.channel();
-                        callBackObject.setCloudConnected(true);
-                        System.out.println("Connect to server successfully!");
-                    } else {
-                        callBackObject.setCloudConnected(false);
-                        System.out.println("Failed to connect to server, try connect after 10s");
-                        futureListener.channel().eventLoop().schedule(new Runnable() {
-                            @Override
-                            public void run() {
-                                doConnect();
-                            }
-                        }, 10, TimeUnit.SECONDS);
-                    }
+        ChannelFuture future = bootstrap.connect(Config.rootConfig.cloud.ip, port);
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture futureListener) throws Exception {
+                if (futureListener.isSuccess()){
+                    channel = futureListener.channel();
+                    callBackObject.setCloudConnected(true);
+                    System.out.println("Connect to server successfully!");
+                } else {
+                    callBackObject.setCloudConnected(false);
+                    System.out.println("Failed to connect to server, try connect after 10s");
+                    futureListener.channel().eventLoop().schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            doConnect();
+                        }
+                    }, 10, TimeUnit.SECONDS);
                 }
-            });
-        } catch (Exception e){
-            e.printStackTrace();
-        }
+            }
+        });
 
 //        future.channel().closeFuture().sync();
     }

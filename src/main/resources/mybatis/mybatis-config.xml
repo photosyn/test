@@ -27,6 +27,6 @@
         <property name="MySQL" value="mysql"/>
     </databaseIdProvider>
     <mappers>
-        <mapper resource="mybatis/groupMapper.xml"/>
+        <mapper resource="mybatis/parkingDataMapper.xml"/>
     </mappers>
 </configuration>

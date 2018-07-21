@@ -12,6 +12,8 @@ import java.util.Date;
 public class Config {
     private static final String CONFIG_PATH = "sites.conf.json";
     public static Root rootConfig;
+    public static long carInTableIndex = -1;
+    public static long carOutTableIndex = -1;
 
     public static void read(){
         try {
@@ -19,7 +21,7 @@ public class Config {
             String text = FileUtils.readFileToString(file, "utf8");
 //            System.out.println("Read config:" + text);
             rootConfig = JSON.parseObject(text, Root.class);
-            syncTimeUpdate(true);
+            syncParamUpdate(true);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -36,23 +38,31 @@ public class Config {
         }
     }
 
-    public static void syncTimeUpdate(boolean firstTime){
-        if (rootConfig.syncTime.from.isEmpty()){
+    public static void syncParamUpdate(boolean firstTime){
+        if (!firstTime)
+        {
+            rootConfig.syncParam.from = rootConfig.syncParam.to;
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Calendar calendar = Calendar.getInstance();
-            rootConfig.syncTime.to = dateFormat.format(calendar.getTime());
-            calendar.add(Calendar.DATE, -7);
-            rootConfig.syncTime.from = dateFormat.format(calendar.getTime());
-            save();
-        }else {
-            if (!firstTime)
-            {
-                rootConfig.syncTime.from = rootConfig.syncTime.to;
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                rootConfig.syncTime.to = dateFormat.format(new Date());
+            rootConfig.syncParam.to = dateFormat.format(new Date());
+            rootConfig.syncParam.carInTableId = carInTableIndex;
+            rootConfig.syncParam.carOutTableId = carOutTableIndex;
+        } else {
+            if(rootConfig.syncParam.mathod.isEmpty()){
+                rootConfig.syncParam.mathod = "id";
             }
+            if (rootConfig.syncParam.from.isEmpty()){
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Calendar calendar = Calendar.getInstance();
+                rootConfig.syncParam.to = dateFormat.format(calendar.getTime());
+                calendar.add(Calendar.DATE, -7);
+                rootConfig.syncParam.from = dateFormat.format(calendar.getTime());
+                rootConfig.syncParam.carInTableId = -1;
+                rootConfig.syncParam.carOutTableId = -1;
+            }
+            carInTableIndex = rootConfig.syncParam.carInTableId;
+            carOutTableIndex = rootConfig.syncParam.carOutTableId;
         }
-//        System.out.println("from:" + rootConfig.syncTime.from + " to:" + rootConfig.syncTime.to);
         save();
+//        System.out.println("from:" + rootConfig.syncTime.from + " to:" + rootConfig.syncTime.to);
     }
 }
