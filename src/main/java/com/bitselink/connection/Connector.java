@@ -2,6 +2,7 @@ package com.bitselink.connection;
 
 import com.bitselink.config.Config;
 import com.bitselink.config.Site;
+import com.bitselink.Client.Protocol.MsgHead;
 import com.bitselink.domain.ParkingGroupData;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ public class Connector {
     private Map<String, String> mapUrl;
     private SqlSessionFactory sqlSessionFactory;
     private ParkingGroupData parkingGroupData;
+    private MsgHead msgHead;
     private boolean isConnected;
 
     public boolean isConnected() {
@@ -33,7 +35,13 @@ public class Connector {
     public Connector() {
         isConnected = false;
         parkingGroupData = new ParkingGroupData();
-        parkingGroupData.setName("parkingGroupData");
+        msgHead = new MsgHead();
+        msgHead.setMcode("100002");
+        msgHead.setVer("0001");
+        msgHead.setMsgatr("20");
+        msgHead.setSafeflg("11");
+        msgHead.setMac("");
+        parkingGroupData.getHead().add(msgHead);
         //添加各种数据库厂商JDBC驱动名称
         mapDriverName = new HashMap<>();
         mapDriverName.put(DB_SQL_SERVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
@@ -79,12 +87,12 @@ public class Connector {
         long tableIndex = -1;
         SqlSession session = sqlSessionFactory.openSession();
         try{
-            parkingGroupData.getParkingDataList().addAll(session.selectList(mybatisMapper, condition));
+            parkingGroupData.getBody().addAll(session.selectList(mybatisMapper, condition));
         } finally {
             session.close();
         }
-        for (int i=0;i<parkingGroupData.getParkingDataList().size();i++){
-            tableIndex = Math.max(tableIndex, parkingGroupData.getParkingDataList().get(i).getId());
+        for (int i=0;i<parkingGroupData.getBody().size();i++){
+            tableIndex = Math.max(tableIndex, Long.parseLong(parkingGroupData.getBody().get(i).getRecordid()));
         }
         return tableIndex;
     }
@@ -92,8 +100,9 @@ public class Connector {
     public ParkingGroupData checkParkingData(){
         long rstInTable = -1;
         long rstOutTable = -1;
-        parkingGroupData.getParkingDataList().clear();
+        parkingGroupData.getBody().clear();
         Map condition=new HashMap();
+        condition.put("devNo", Config.rootConfig.register);
         if (Config.rootConfig.syncParam.carInTableId > 0 && Config.rootConfig.syncParam.mathod.equals("id")){
             condition.put("recordId", Config.rootConfig.syncParam.carInTableId);
             System.out.println("carIn(recordId): > " + Config.rootConfig.syncParam.carInTableId);

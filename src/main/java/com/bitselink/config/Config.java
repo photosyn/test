@@ -14,6 +14,20 @@ public class Config {
     public static Root rootConfig;
     public static long carInTableIndex = -1;
     public static long carOutTableIndex = -1;
+    private static int msgId = 0;
+    private static boolean cloudRefuse = false;
+
+    public static boolean isCloudRefuse() {
+        return cloudRefuse;
+    }
+
+    public static void setCloudRefuse(boolean cloudRefuse) {
+        Config.cloudRefuse = cloudRefuse;
+    }
+
+    public static int getMsgId() {
+        return msgId++;
+    }
 
     public static void read(){
         try {

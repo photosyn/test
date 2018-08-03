@@ -13,6 +13,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 import java.io.UnsupportedEncodingException;
 import java.util.Base64;
@@ -22,9 +23,9 @@ public class EchoClient {
     public ICallBack callBackObject = null;// 引用回调对象
     private final static String HOST = "192.168.3.4";
     private final static int PORT = 8089;
-    private static int msgId = 0;
     private Channel channel;
-    Bootstrap bootstrap;
+    private Bootstrap bootstrap;
+    private BitLinkEncoder encoder = new BitLinkEncoder();
     private NioEventLoopGroup workGroup = new NioEventLoopGroup();
 
     public EchoClient(ICallBack obj){
@@ -32,19 +33,21 @@ public class EchoClient {
     }
 
     public void sendParkingData(ParkingGroupData parkingGroupData){
-        if (channel != null && channel.isActive()) {
-            if (parkingGroupData.getParkingDataList().size() > 0)
+        if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
+            if (parkingGroupData.getBody().size() > 0)
             {
-                parkingGroupData.setMsgId(msgId++);
-                String packStr = JSON.toJSONString(parkingGroupData);
-//                packStr = "{\"msgtype\":\"parkingData\",\"success\":true}";
-                String encoded = "";
-                try {
-                    encoded = Base64.getEncoder().encodeToString(packStr.getBytes("utf-8"));
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                String sendStr = String.format("%1$08d",encoded.length()) + encoded;
+//                parkingGroupData.getHead().get(0).generateIdAndTime();
+//                String packStr = JSON.toJSONString(parkingGroupData);
+////                packStr = "{\"msgtype\":\"parkingData\",\"success\":true}";
+//                String encoded = "";
+//                try {
+//                    encoded = Base64.getEncoder().encodeToString(packStr.getBytes("utf-8"));
+//                } catch (UnsupportedEncodingException e) {
+//                    e.printStackTrace();
+//                }
+//                String sendStr = String.format("%1$08d",encoded.length()) + encoded;
+                parkingGroupData.getHead().get(0).generateIdAndTime();
+                String sendStr = encoder.encode(parkingGroupData);
                 channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
             }
         }
@@ -58,6 +61,7 @@ public class EchoClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
+                            ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(20,0,0));
                             ch.pipeline().addLast(new EchoClientHandler(EchoClient.this));
                         }
                     });

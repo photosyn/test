@@ -4,6 +4,15 @@ public class Root {
     public Site site;
     public Cloud cloud;
     public SyncParam syncParam;
+    public String register;
+
+    public String getRegister() {
+        return register;
+    }
+
+    public void setRegister(String register) {
+        this.register = register;
+    }
 
     public SyncParam getSyncParam() {
         return syncParam;

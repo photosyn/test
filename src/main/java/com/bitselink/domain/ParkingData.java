@@ -1,50 +1,60 @@
 package com.bitselink.domain;
 
 public class ParkingData {
-    private long id;
-    private String action;
-    private String plateNo;
-    private String time;
+    private String recordid;
+    private String devno;
+    private String inouttype;
+    private String plateno;
+    private String inoutdtime;
 
     @Override
     public String toString() {
         return "ParkingData{" +
-                "action='" + action + '\'' +
-                ", id=" + id +
-                ", plateNo='" + plateNo + '\'' +
-                ", time='" + time + '\'' +
+                "recordid='" + recordid + '\'' +
+                ", devno='" + devno + '\'' +
+                ", inouttype='" + inouttype + '\'' +
+                ", plateno='" + plateno + '\'' +
+                ", inoutdtime='" + inoutdtime + '\'' +
                 '}';
     }
 
-    public String getPlateNo() {
-        return plateNo;
+    public String getRecordid() {
+        return recordid;
     }
 
-    public void setPlateNo(String plateNo) {
-        this.plateNo = plateNo;
+    public void setRecordid(String recordid) {
+        this.recordid = recordid;
     }
 
-    public String getAction() {
-        return action;
+    public String getDevno() {
+        return devno;
     }
 
-    public void setAction(String action) {
-        this.action = action;
+    public void setDevno(String devno) {
+        this.devno = devno;
     }
 
-    public long getId() {
-        return id;
+    public String getInouttype() {
+        return inouttype;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public void setInouttype(String inouttype) {
+        this.inouttype = inouttype;
     }
 
-    public String getTime() {
-        return time;
+    public String getPlateno() {
+        return plateno;
     }
 
-    public void setTime(String time) {
-        this.time = time;
+    public void setPlateno(String plateno) {
+        this.plateno = plateno;
+    }
+
+    public String getInoutdtime() {
+        return inoutdtime;
+    }
+
+    public void setInoutdtime(String inoutdtime) {
+        this.inoutdtime = inoutdtime;
     }
 }

@@ -1,43 +1,35 @@
 package com.bitselink.domain;
 
+import com.bitselink.Client.Protocol.MsgHead;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class ParkingGroupData {
-    private int msgId;
-    private String name;
-    private List<ParkingData> parkingDataList = new ArrayList<>();
+    private List<MsgHead> head = new ArrayList<>();
+    private List<ParkingData> body = new ArrayList<>();
 
     @Override
     public String toString() {
         return "ParkingGroupData{" +
-                "msgId=" + msgId +
-                ", name='" + name + '\'' +
-                ", parkingDataList=" + parkingDataList +
+                "head=" + head +
+                ", body=" + body +
                 '}';
     }
 
-    public int getMsgId() {
-        return msgId;
+    public List<MsgHead> getHead() {
+        return head;
     }
 
-    public void setMsgId(int msgId) {
-        this.msgId = msgId;
+    public void setHead(List<MsgHead> head) {
+        this.head = head;
     }
 
-    public String getName() {
-        return name;
+    public List<ParkingData> getBody() {
+        return body;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<ParkingData> getParkingDataList() {
-        return parkingDataList;
-    }
-
-    public void setParkingDataList(List<ParkingData> parkingDataList) {
-        this.parkingDataList = parkingDataList;
+    public void setBody(List<ParkingData> body) {
+        this.body = body;
     }
 }

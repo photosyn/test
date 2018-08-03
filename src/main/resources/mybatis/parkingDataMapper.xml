@@ -13,10 +13,11 @@
  根据id查询得到一个user对象
  -->
     <resultMap id="parkingDataMap" type="com.bitselink.domain.ParkingData">
-        <result property="id" column="ID" />
-        <result property="action" column="action" />
-        <result property="plateNo" column="plateNo" />
-        <result property="time" column="time" />
+        <result property="recordid" column="ID" />
+        <result property="devno" column="devno" />
+        <result property="inouttype" column="inouttype" />
+        <result property="plateno" column="plateno" />
+        <result property="inoutdtime" column="inoutdtime" />
 <!--        <result property="P_DateTime" column="P_DateTime" javaType="java.util.Date" jdbcType="TIMESTAMP"/>-->
     </resultMap>
 
@@ -36,7 +37,7 @@
     </select>
     <!--<select id="selectCarInByCondition" parameterType="map" resultType="map" databaseId="sqlserver">-->
     <select id="selectCarInByCondition" parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">
-        select 'in' as action,ID,CPH as plateNo,InTime as time from dbo.MYCARCOMERECORD
+        select 0 as inouttype,#{devNo} as devno,ID,CPH as plateno,InTime as inoutdtime from dbo.MYCARCOMERECORD
         <where>
             <if test="timeFrom != null and timeTo != null">
                 InTime between #{timeFrom} and #{timeTo}
@@ -48,7 +49,7 @@
     </select>
     <!--<select id="selectCarOutByCondition" parameterType="map" resultType="map" databaseId="sqlserver">-->
     <select id="selectCarOutByCondition" parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">
-        select 'out' as action,ID,CPH as plateNo,OutTime as time from dbo.MYCARGOOUTRECORD
+        select 1 as inouttype,#{devNo} as devno,ID,CPH as plateno,OutTime as inoutdtime from dbo.MYCARGOOUTRECORD
         <where>
             <if test="timeFrom != null and timeTo != null">
                 OutTime between #{timeFrom} and #{timeTo}
