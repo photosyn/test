@@ -5,6 +5,7 @@ import com.bitselink.Client.Protocol.*;
 import com.bitselink.config.Config;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -52,49 +53,39 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         heartbeatData.getHead().add(heartbeatHead);
         heartbeatData.getBody().add(heartbeatBody);
 
+        if (Config.rootConfig.register.isEmpty()) {
+            Config.setIsWaitRegister(true);
+        }
     }
 
-    private void sendHeartbeat(ChannelHandlerContext ctx) {
-//        heartbeatData.getHead().get(0).generateIdAndTime();
-//        String packStr = JSON.toJSONString(heartbeatData);
-//        String encoded = "";
-//        try {
-//            encoded = Base64.getEncoder().encodeToString(packStr.getBytes("utf-8"));
-//        } catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }
-//        String sendStr = String.format("%1$08d",encoded.length()) + encoded;
-
+    public void sendHeartbeat(Channel channel) {
         heartbeatData.getHead().get(0).generateIdAndTime();
         String sendStr = encoder.encode(heartbeatData);
-        ctx.channel().writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+        channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
     }
 
-    private void sendRegisterData(ChannelHandlerContext ctx) {
-
+    public void sendRegisterData(Channel channel) {
         registerData.getHead().get(0).generateIdAndTime();
         String sendStr = encoder.encode(registerData);
-
-//        String packStr = JSON.toJSONString(registerData);
-//        String encoded = "";
-//        try {
-//            encoded = Base64.getEncoder().encodeToString(packStr.getBytes("utf-8"));
-//        } catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }
-//        String sendStr = String.format("%1$08d",encoded.length()) + encoded;
-        ctx.channel().writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+        channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
     }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (IdleStateEvent.class.isAssignableFrom(evt.getClass())) {
             IdleStateEvent event = (IdleStateEvent) evt;
-            if (event.state() == IdleState.READER_IDLE)
-                sendHeartbeat(ctx);
+            if (event.state() == IdleState.READER_IDLE) {
+                if (!Config.isIsWaitRegister()) {
+                    sendHeartbeat(ctx.channel());
+                }
 //                System.out.println("read idle");
-            else if (event.state() == IdleState.WRITER_IDLE)
-                System.out.println("write idle");
+            }
+            else if (event.state() == IdleState.WRITER_IDLE) {
+                if (Config.isIsWaitRegister()) {
+                    sendRegisterData(ctx.channel());
+                }
+                //System.out.println("write idle");
+            }
             else if (event.state() == IdleState.ALL_IDLE)
                 System.out.println("all idle");
         }
@@ -104,7 +95,11 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 //        ctx.writeAndFlush(Unpooled.copiedBuffer("Netty rocks!\r\n", CharsetUtil.UTF_8));
         if (Config.rootConfig.register.isEmpty()) {
-            sendRegisterData(ctx);
+            Config.setIsWaitRegister(true);
+            sendRegisterData(ctx.channel());
+        } else {
+            Config.setIsWaitRegister(false);
+            sendHeartbeat(ctx.channel());
         }
     }
 
@@ -144,9 +139,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                             Config.rootConfig.register = respRegisterBody.getDevno();
                             Config.save();
                         }
-                        else {
-                            Config.setCloudRefuse(true);
-                        }
+                        Config.setIsWaitRegister(false);
                         break;
                     }
                     case "100002":

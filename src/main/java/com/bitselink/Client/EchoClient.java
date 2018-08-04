@@ -15,18 +15,15 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
-import java.io.UnsupportedEncodingException;
-import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 public class EchoClient {
-    public ICallBack callBackObject = null;// 引用回调对象
-    private final static String HOST = "192.168.3.4";
-    private final static int PORT = 8089;
+    public ICallBack callBackObject;// 引用回调对象
     private Channel channel;
     private Bootstrap bootstrap;
     private BitLinkEncoder encoder = new BitLinkEncoder();
     private NioEventLoopGroup workGroup = new NioEventLoopGroup();
+    private EchoClientHandler clientHandler = new EchoClientHandler(EchoClient.this);
 
     public EchoClient(ICallBack obj){
         this.callBackObject = obj;
@@ -36,20 +33,16 @@ public class EchoClient {
         if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
             if (parkingGroupData.getBody().size() > 0)
             {
-//                parkingGroupData.getHead().get(0).generateIdAndTime();
-//                String packStr = JSON.toJSONString(parkingGroupData);
-////                packStr = "{\"msgtype\":\"parkingData\",\"success\":true}";
-//                String encoded = "";
-//                try {
-//                    encoded = Base64.getEncoder().encodeToString(packStr.getBytes("utf-8"));
-//                } catch (UnsupportedEncodingException e) {
-//                    e.printStackTrace();
-//                }
-//                String sendStr = String.format("%1$08d",encoded.length()) + encoded;
                 parkingGroupData.getHead().get(0).generateIdAndTime();
                 String sendStr = encoder.encode(parkingGroupData);
                 channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
             }
+        }
+    }
+
+    public void sendRegisterData() {
+        if (channel != null && channel.isActive()) {
+            clientHandler.sendRegisterData(channel);
         }
     }
 
@@ -61,8 +54,8 @@ public class EchoClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
-                            ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(20,0,0));
-                            ch.pipeline().addLast(new EchoClientHandler(EchoClient.this));
+                            ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(20,10,0));
+                            ch.pipeline().addLast(clientHandler);
                         }
                     });
             doConnect();
@@ -89,10 +82,15 @@ public class EchoClient {
             public void operationComplete(ChannelFuture futureListener) throws Exception {
                 if (futureListener.isSuccess()){
                     channel = futureListener.channel();
-                    callBackObject.setCloudConnected(true);
-                    System.out.println("Connect to server successfully!");
+                    if (Config.rootConfig.register.isEmpty()) {
+                        callBackObject.setCloudState(CloudState.NO_REGISTERED);
+                        System.out.println("Connect to server successfully, but need register!");
+                    } else {
+                        callBackObject.setCloudState(CloudState.CONNECTED);
+                        System.out.println("Connect to server successfully!");
+                    }
                 } else {
-                    callBackObject.setCloudConnected(false);
+                    callBackObject.setCloudState(CloudState.CONNECT_FAIL);
                     System.out.println("Failed to connect to server, try connect after 10s");
                     futureListener.channel().eventLoop().schedule(new Runnable() {
                         @Override

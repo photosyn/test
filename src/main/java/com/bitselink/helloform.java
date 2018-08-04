@@ -6,22 +6,32 @@ import java.awt.event.*;
 import java.sql.*;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.regex.Pattern;
 
+import com.bitselink.Client.CloudState;
 import com.bitselink.Client.EchoClient;
 import com.bitselink.config.*;
 import com.bitselink.connection.Connector;
 
 public class helloform implements ICallBack {
     @Override
-    public void setCloudConnected(boolean connected) {
-        if (connected) {
-            labelCloudInfo.setText(resourceBundle.getString("msg.connectSuccess"));
-            if (connector.isConnected()) {
-                timer.restart();
+    public void setCloudState(CloudState state) {
+        labelCloudInfo.setText(resourceBundle.getString(state.getName()));
+        switch (state) {
+            case CONNECTED: {
+                if (connector.isConnected()) {
+                    timer.restart();
+                }
             }
-        } else {
-            labelCloudInfo.setText(resourceBundle.getString("msg.connectFault"));
-            timer.stop();
+            break;
+            case CONNECT_FAIL: {
+                timer.stop();
+            }
+            break;
+            case NO_REGISTERED: {
+                echoClient.sendRegisterData();
+            }
+            break;
         }
     }
 
@@ -81,9 +91,19 @@ public class helloform implements ICallBack {
 
         textFieldCloudIp.setText(Config.rootConfig.cloud.ip);
         textFieldCloudPort.setText(Config.rootConfig.cloud.port);
+        textFieldCloudPhone.setText(Config.rootConfig.cloud.phone);
     }
 
     private void saveSiteConfigData() {
+        if (!Pattern.matches(IP_PATTERN, textFieldIp.getText())) {
+            JOptionPane.showMessageDialog(null, labelIp.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!Pattern.matches(PORT_PATTERN, textFieldPort.getText())) {
+            JOptionPane.showMessageDialog(null, labelPort.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         Config.rootConfig.site.dbType = comboBoxDatabase.getSelectedItem().toString();
         Config.rootConfig.site.ip = textFieldIp.getText();
         Config.rootConfig.site.port = textFieldPort.getText();
@@ -94,8 +114,40 @@ public class helloform implements ICallBack {
     }
 
     private void saveCouldConfigData() {
-        Config.rootConfig.cloud.ip = textFieldCloudIp.getText();
-        Config.rootConfig.cloud.port = textFieldCloudPort.getText();
+        String cloudIP = textFieldCloudIp.getText();
+        if (!Pattern.matches(IP_PATTERN, cloudIP)) {
+            JOptionPane.showMessageDialog(null, labelCloudIp.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String cloudPort = textFieldCloudPort.getText();
+        if (!Pattern.matches(PORT_PATTERN, textFieldCloudPort.getText())) {
+            JOptionPane.showMessageDialog(null, labelCloudPort.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String cloudPhone = textFieldCloudPhone.getText();
+        if (!Pattern.matches(PHONE_PATTERN, textFieldCloudPhone.getText())) {
+            JOptionPane.showMessageDialog(null, labelCloudPhone.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!cloudPhone.equals(Config.rootConfig.cloud.phone)) {
+            int option = JOptionPane.showConfirmDialog(null, "注意：请确认是否进行4G卡变更\r\n如选择是，将在服务器端注册为新停车场，请与服务器管理员确定是否允许注册！！\r\n如选择否，则继续使用已注册的停车场业务", "提示", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (option > 0) {
+                textFieldCloudPhone.setText(Config.rootConfig.cloud.phone);
+                cloudPhone = Config.rootConfig.cloud.phone;
+            } else {
+                //使用新4G卡号，需要重新走注册流程
+                Config.rootConfig.register = "";
+                Config.setIsWaitRegister(true);
+                setCloudState(CloudState.NO_REGISTERED);
+            }
+        }
+
+        Config.rootConfig.cloud.ip = cloudIP;
+        Config.rootConfig.cloud.port = cloudPort;
+        Config.rootConfig.cloud.phone = cloudPhone;
         Config.save();
     }
 
@@ -424,7 +476,7 @@ public class helloform implements ICallBack {
         this.$$$loadLabelText$$$(labelCloudStatus, ResourceBundle.getBundle("myProp").getString("ui.cloudStatus"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         cloudTab.add(labelCloudStatus, gbc);
@@ -434,7 +486,7 @@ public class helloform implements ICallBack {
         this.$$$loadLabelText$$$(labelCloudInfo, ResourceBundle.getBundle("myProp").getString("msg.noConnection"));
         gbc = new GridBagConstraints();
         gbc.gridx = 2;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         cloudTab.add(labelCloudInfo, gbc);
@@ -449,6 +501,26 @@ public class helloform implements ICallBack {
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         cloudTab.add(buttonCloudSave, gbc);
+        labelCloudPhone = new JLabel();
+        Font labelCloudPhoneFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelCloudPhone.getFont());
+        if (labelCloudPhoneFont != null) labelCloudPhone.setFont(labelCloudPhoneFont);
+        this.$$$loadLabelText$$$(labelCloudPhone, ResourceBundle.getBundle("myProp").getString("ui.phone"));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(labelCloudPhone, gbc);
+        textFieldCloudPhone = new JTextField();
+        Font textFieldCloudPhoneFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, textFieldCloudPhone.getFont());
+        if (textFieldCloudPhoneFont != null) textFieldCloudPhone.setFont(textFieldCloudPhoneFont);
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 3;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        cloudTab.add(textFieldCloudPhone, gbc);
         statusTab = new JPanel();
         statusTab.setLayout(new GridBagLayout());
         Font statusTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, statusTab.getFont());
@@ -551,11 +623,15 @@ public class helloform implements ICallBack {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.pack();
         frame.addWindowListener(new CloseWindowListener());
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
-    private ResourceBundle resourceBundle;
+    static private final String IP_PATTERN = "^(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])$";
+    static private final String PORT_PATTERN = "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5])$";
+    static private final String PHONE_PATTERN = "^1(3|4|5|7|8)\\d{9}$";
     static private Connector connector;
+    private ResourceBundle resourceBundle;
     private Timer timer;
     private EchoClient echoClient;
 
@@ -585,6 +661,8 @@ public class helloform implements ICallBack {
     private JLabel labelCloudStatus;
     private JLabel labelCloudInfo;
     private JButton buttonCloudSave;
+    private JLabel labelCloudPhone;
+    private JTextField textFieldCloudPhone;
     private JTextField textFieldStatus;
 
 }

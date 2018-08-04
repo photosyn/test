@@ -3,10 +3,12 @@ package com.bitselink.config;
 public class Cloud {
     public String ip;
     public String port;
+    public String phone;
 
     public Cloud() {
         ip = "";
         port = "";
+        phone = "";
     }
 
     public String getIp() {
@@ -23,5 +25,13 @@ public class Cloud {
 
     public void setPort(String port) {
         this.port = port;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 }

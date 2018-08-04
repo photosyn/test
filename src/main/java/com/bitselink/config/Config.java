@@ -15,14 +15,14 @@ public class Config {
     public static long carInTableIndex = -1;
     public static long carOutTableIndex = -1;
     private static int msgId = 0;
-    private static boolean cloudRefuse = false;
+    private static boolean isWaitRegister = false;
 
-    public static boolean isCloudRefuse() {
-        return cloudRefuse;
+    public static boolean isIsWaitRegister() {
+        return isWaitRegister;
     }
 
-    public static void setCloudRefuse(boolean cloudRefuse) {
-        Config.cloudRefuse = cloudRefuse;
+    public static void setIsWaitRegister(boolean isWaitRegister) {
+        Config.isWaitRegister = isWaitRegister;
     }
 
     public static int getMsgId() {

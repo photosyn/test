@@ -4,6 +4,7 @@ import com.bitselink.config.Config;
 
 import java.text.DateFormat;
 import java.util.Date;
+import org.apache.commons.codec.digest.DigestUtils;
 
 public class MsgHead {
     private String mcode;
@@ -25,6 +26,10 @@ public class MsgHead {
         setDate(now_date);
         setTime(now_time);
         setMid(Integer.toString(msgId));
+        String sourceStr = "mcode='" + getMcode() + "'&mid='" + getMid() + "'&date='" + getDate() + "'&time='" + getTime() +
+                "'&ver='" + getVer() + "'&msgatr='" + getMsgatr() + "'&safeflg='" + getSafeflg() + "'&key='" + "02468ACE13579BDF'";
+        String md5Str = DigestUtils.md5Hex(sourceStr);
+        setMac(md5Str);
     }
 
     public String getMcode() {
