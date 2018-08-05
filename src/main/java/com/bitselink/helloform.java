@@ -47,8 +47,7 @@ public class helloform implements ICallBack {
                 } else {
                     init();
                 }
-            }
-            else {
+            } else {
                 LogHelper.info("读取配置文件成功");
                 init();
             }
@@ -78,8 +77,12 @@ public class helloform implements ICallBack {
              */
             @Override
             public void actionPerformed(ActionEvent e) {
-                doSiteConnect();
-                //doConnectTest();
+                if (connector.isConnected()) {
+                    JOptionPane.showMessageDialog(null, "数据库已连接", "提示", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    doSiteConnect();
+                    //doConnectTest();
+                }
             }
         });
         buttonCloudSave.addActionListener(new ActionListener() {
@@ -672,11 +675,13 @@ public class helloform implements ICallBack {
             if (null != connector) {
                 connector.closeDb();
             }
+            LogHelper.info("程序关闭\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n");
             super.windowClosing(e);
         }
     }
 
     public static void main(String[] args) {
+        LogHelper.info("程序启动，版本：" + SOFT_VER);
         JFrame frame = new JFrame("helloform");
         frame.setContentPane(new helloform().topPanel);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -686,6 +691,7 @@ public class helloform implements ICallBack {
         frame.setVisible(true);
     }
 
+    static private final String SOFT_VER = "V1.0(a)";
     static private final String IP_PATTERN = "^(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])$";
     static private final String PORT_PATTERN = "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5])$";
     static private final String PHONE_PATTERN = "^1(3|4|5|7|8)\\d{9}$";
