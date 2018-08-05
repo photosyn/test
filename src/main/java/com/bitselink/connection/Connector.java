@@ -1,5 +1,6 @@
 package com.bitselink.connection;
 
+import com.bitselink.LogHelper;
 import com.bitselink.config.Config;
 import com.bitselink.config.Site;
 import com.bitselink.Client.Protocol.MsgHead;
@@ -10,6 +11,9 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+
+import com.microsoft.sqlserver.jdbc.SQLServerException;
+import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -76,14 +80,25 @@ public class Connector {
             String resource = MYBATIS_CONFIG;
             InputStream mybatisConfig = Resources.getResourceAsStream(resource);
             sqlSessionFactory = new SqlSessionFactoryBuilder().build(mybatisConfig,"production", properties);
-            isConnected = true;
-        } catch (IOException e) {
+            isConnected = connectTest();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return isConnected;
     }
 
-    public long checkParkingDataWithCondition(String mybatisMapper, Map condition){
+    private boolean connectTest() {
+        try {
+            SqlSession session = sqlSessionFactory.openSession();
+            session.selectOne("mybatis.parkingDataMapper.connectTest");
+        } catch (Exception e) {
+            LogHelper.warn("连接数据库失败：" + e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    private long checkParkingDataWithCondition(String mybatisMapper, Map condition){
         long tableIndex = -1;
         SqlSession session = sqlSessionFactory.openSession();
         try{
@@ -105,24 +120,24 @@ public class Connector {
         condition.put("devNo", Config.rootConfig.register);
         if (Config.rootConfig.syncParam.carInTableId > 0 && Config.rootConfig.syncParam.mathod.equals("id")){
             condition.put("recordId", Config.rootConfig.syncParam.carInTableId);
-            System.out.println("carIn(recordId): > " + Config.rootConfig.syncParam.carInTableId);
+            LogHelper.info("carIn(recordId): > " + Config.rootConfig.syncParam.carInTableId);
         }
         else {
             condition.put("timeFrom", Config.rootConfig.syncParam.from);
             condition.put("timeTo", Config.rootConfig.syncParam.to);
-            System.out.println("from:" + Config.rootConfig.syncParam.from + " to:" + Config.rootConfig.syncParam.to);
+            LogHelper.info("from:" + Config.rootConfig.syncParam.from + " to:" + Config.rootConfig.syncParam.to);
         }
         rstInTable = checkParkingDataWithCondition("mybatis.parkingDataMapper.selectCarInByCondition", condition);
 
         condition.clear();
         if (Config.rootConfig.syncParam.carOutTableId > 0 && Config.rootConfig.syncParam.mathod.equals("id")){
             condition.put("recordId", Config.rootConfig.syncParam.carOutTableId);
-            System.out.println("carOut(recordId): > " + Config.rootConfig.syncParam.carOutTableId);
+            LogHelper.info("carOut(recordId): > " + Config.rootConfig.syncParam.carOutTableId);
         }
         else {
             condition.put("timeFrom", Config.rootConfig.syncParam.from);
             condition.put("timeTo", Config.rootConfig.syncParam.to);
-            System.out.println("from:" + Config.rootConfig.syncParam.from + " to:" + Config.rootConfig.syncParam.to);
+            LogHelper.info("from:" + Config.rootConfig.syncParam.from + " to:" + Config.rootConfig.syncParam.to);
         }
         rstOutTable = checkParkingDataWithCondition("mybatis.parkingDataMapper.selectCarOutByCondition", condition);
 

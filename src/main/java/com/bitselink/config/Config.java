@@ -1,10 +1,13 @@
 package com.bitselink.config;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.bitselink.LogHelper;
 import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
+import java.io.WriteAbortedException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -16,6 +19,15 @@ public class Config {
     public static long carOutTableIndex = -1;
     private static int msgId = 0;
     private static boolean isWaitRegister = false;
+    private static boolean isAppError = false;
+
+    public static boolean isIsAppError() {
+        return isAppError;
+    }
+
+    public static void setIsAppError(boolean isAppError) {
+        Config.isAppError = isAppError;
+    }
 
     public static boolean isIsWaitRegister() {
         return isWaitRegister;
@@ -29,27 +41,48 @@ public class Config {
         return msgId++;
     }
 
-    public static void read(){
+    public static boolean read() throws JSONException{
         try {
             File file = new File(CONFIG_PATH);
             String text = FileUtils.readFileToString(file, "utf8");
-//            System.out.println("Read config:" + text);
             rootConfig = JSON.parseObject(text, Root.class);
             syncParamUpdate(true);
         } catch (IOException e) {
-            e.printStackTrace();
+            LogHelper.error("配置文件缺失：" + e.getMessage() + "重新创建配置文件");
+            return false;
         }
+        return true;
     }
 
-    public static void save(){
+    public static boolean repair() {
+        if (null == rootConfig) {
+            rootConfig = new Root();
+        }
+        if (null == rootConfig.site) {
+            rootConfig.site = new Site();
+        }
+        if (null == rootConfig.cloud) {
+            rootConfig.cloud = new Cloud();
+        }
+        if (null == rootConfig.syncParam) {
+            rootConfig.syncParam = new SyncParam();
+        }
+        if (null == rootConfig.register) {
+            rootConfig.register = new String();
+        }
+        return save();
+    }
+
+    public static boolean save(){
         try {
             String jsonString = JSONObject.toJSONString(rootConfig);
             File file = new File(CONFIG_PATH);
             FileUtils.writeStringToFile(file, jsonString,"utf8");
-//            System.out.println("Write site:" + jsonString);
         } catch (IOException e) {
-            e.printStackTrace();
+            LogHelper.error("重新创建配置文件失败：" + e.getMessage());
+            return false;
         }
+        return true;
     }
 
     public static void syncParamUpdate(boolean firstTime){

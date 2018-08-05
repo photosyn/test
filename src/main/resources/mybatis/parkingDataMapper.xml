@@ -22,18 +22,18 @@
     </resultMap>
 
     <select id="selectParkingData" parameterType="map" resultType="map" databaseId="sqlserver">
-        <!--select P_Memo from Pcm_Group where P_GroupID=#{id}-->
         select 'in' as action,ID,CPH as plateNo,InTime as time from dbo.MYCARCOMERECORD where InTime between #{timeFrom} and #{timeTo}
         union all
         select 'out' as action,ID,CPH as plateNo,OutTime as time from dbo.MYCARGOOUTRECORD where OutTime between #{timeFrom} and #{timeTo}
     </select>
     <select id="selectCarInTableData" parameterType="map" resultType="map" databaseId="sqlserver">
-        <!--select P_Memo from Pcm_Group where P_GroupID=#{id}-->
         select 'in' as action,ID,CPH as plateNo,InTime as time from dbo.MYCARCOMERECORD where InTime between #{timeFrom} and #{timeTo}
     </select>
     <select id="selectCarOutTableData" parameterType="map" resultType="map" databaseId="sqlserver">
-        <!--select P_Memo from Pcm_Group where P_GroupID=#{id}-->
         select 'out' as action,ID,CPH as plateNo,OutTime as time from dbo.MYCARGOOUTRECORD where OutTime between #{timeFrom} and #{timeTo}
+    </select>
+    <select id="connectTest" resultType="map" databaseId="sqlserver">
+        select top(1)* from MYCARCOMERECORD
     </select>
     <!--<select id="selectCarInByCondition" parameterType="map" resultType="map" databaseId="sqlserver">-->
     <select id="selectCarInByCondition" parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">

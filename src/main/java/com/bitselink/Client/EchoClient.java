@@ -1,7 +1,8 @@
 package com.bitselink.Client;
 
-import com.alibaba.fastjson.JSON;
+import com.bitselink.Client.Protocol.*;
 import com.bitselink.ICallBack;
+import com.bitselink.LogHelper;
 import com.bitselink.config.Config;
 import com.bitselink.domain.ParkingGroupData;
 import io.netty.bootstrap.Bootstrap;
@@ -13,20 +14,73 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
+
 import java.util.concurrent.TimeUnit;
 
 public class EchoClient {
     public ICallBack callBackObject;// 引用回调对象
     private Channel channel;
     private Bootstrap bootstrap;
-    private BitLinkEncoder encoder = new BitLinkEncoder();
     private NioEventLoopGroup workGroup = new NioEventLoopGroup();
-    private EchoClientHandler clientHandler = new EchoClientHandler(EchoClient.this);
+
+    private BitLinkEncoder encoder;
+    private RegisterData registerData;
+    private HeartbeatData heartbeatData;
 
     public EchoClient(ICallBack obj){
         this.callBackObject = obj;
+        encoder = new BitLinkEncoder();
+
+        registerData = new RegisterData();
+        MsgHead registerHead = new MsgHead();
+        registerHead.setMcode("100001");
+        registerHead.setVer("0001");
+        registerHead.setMsgatr("20");
+        registerHead.setSafeflg("11");
+        RegisterBody registerBody = new RegisterBody();
+        registerData.getHead().add(registerHead);
+        registerData.getBody().add(registerBody);
+
+        heartbeatData = new HeartbeatData();
+        MsgHead heartbeatHead = new MsgHead();
+        heartbeatHead.setMcode("000001");
+        heartbeatHead.setVer("0001");
+        heartbeatHead.setMsgatr("99");
+        heartbeatHead.setSafeflg("11");
+        HeartbeatBody heartbeatBody = new HeartbeatBody();
+        heartbeatBody.setSerial(Config.rootConfig.register);
+        heartbeatData.getHead().add(heartbeatHead);
+        heartbeatData.getBody().add(heartbeatBody);
+
+        if (Config.rootConfig.register.isEmpty()) {
+            Config.setIsWaitRegister(true);
+        }
+    }
+
+    public Channel getChannel() {
+        return channel;
+    }
+
+    public void sendHeartbeat(Channel channel) {
+        if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
+            heartbeatData.getHead().get(0).generateIdAndTime();
+            heartbeatData.getBody().get(0).setSerial(Config.rootConfig.register);
+            String sendStr = encoder.encode(heartbeatData);
+            channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+        }
+    }
+
+    public void sendRegisterData(Channel channel) {
+        if (channel != null && channel.isActive()) {
+            registerData.getHead().get(0).generateIdAndTime();
+            registerData.getBody().get(0).setTelno(Config.rootConfig.cloud.phone);
+            String sendStr = encoder.encode(registerData);
+            channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+        }
     }
 
     public void sendParkingData(ParkingGroupData parkingGroupData){
@@ -40,12 +94,6 @@ public class EchoClient {
         }
     }
 
-    public void sendRegisterData() {
-        if (channel != null && channel.isActive()) {
-            clientHandler.sendRegisterData(channel);
-        }
-    }
-
     public void start(){
         try{
             bootstrap = new Bootstrap();
@@ -54,8 +102,9 @@ public class EchoClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
+                            ch.pipeline().addLast("logging", new LoggingHandler(LogLevel.INFO));
                             ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(20,10,0));
-                            ch.pipeline().addLast(clientHandler);
+                            ch.pipeline().addLast(new EchoClientHandler(EchoClient.this));
                         }
                     });
             doConnect();
@@ -76,6 +125,7 @@ public class EchoClient {
             return;
         }
 
+        LogHelper.info("连接中心服务器：ip=" + Config.rootConfig.cloud.ip + ", port=" + port);
         ChannelFuture future = bootstrap.connect(Config.rootConfig.cloud.ip, port);
         future.addListener(new ChannelFutureListener() {
             @Override
@@ -84,14 +134,14 @@ public class EchoClient {
                     channel = futureListener.channel();
                     if (Config.rootConfig.register.isEmpty()) {
                         callBackObject.setCloudState(CloudState.NO_REGISTERED);
-                        System.out.println("Connect to server successfully, but need register!");
+                        LogHelper.warn("中心服务器连接成功，设备未注册");
                     } else {
                         callBackObject.setCloudState(CloudState.CONNECTED);
-                        System.out.println("Connect to server successfully!");
+                        LogHelper.info("中心服务器连接成功，设备已注册");
                     }
                 } else {
                     callBackObject.setCloudState(CloudState.CONNECT_FAIL);
-                    System.out.println("Failed to connect to server, try connect after 10s");
+                    LogHelper.warn("中心服务器连接失败，10秒后重新尝试");
                     futureListener.channel().eventLoop().schedule(new Runnable() {
                         @Override
                         public void run() {

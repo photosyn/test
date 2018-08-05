@@ -6,6 +6,13 @@ public class Root {
     public SyncParam syncParam;
     public String register;
 
+    public Root() {
+        site = new Site();
+        cloud = new Cloud();
+        syncParam = new SyncParam();
+        register = "";
+    }
+
     public String getRegister() {
         return register;
     }

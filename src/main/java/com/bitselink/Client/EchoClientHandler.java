@@ -1,16 +1,17 @@
 package com.bitselink.Client;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONException;
 import com.bitselink.Client.Protocol.*;
+import com.bitselink.LogHelper;
 import com.bitselink.config.Config;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Base64;
@@ -18,56 +19,11 @@ import java.util.Base64;
 public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private EchoClient client;
     private String leftStr;
-    private RegisterData registerData;
-    private HeartbeatData heartbeatData;
-    private BitLinkEncoder encoder;
 
     public EchoClientHandler(EchoClient client) {
         super();
         this.client = client;
         leftStr = "";
-
-        encoder = new BitLinkEncoder();
-
-        registerData = new RegisterData();
-        MsgHead registerHead = new MsgHead();
-        registerHead.setMcode("100001");
-        registerHead.setVer("0001");
-        registerHead.setMsgatr("20");
-        registerHead.setSafeflg("11");
-        registerHead.setMac("");
-        RegisterBody registerBody = new RegisterBody();
-        registerBody.setTelno("13812345678");
-        registerData.getHead().add(registerHead);
-        registerData.getBody().add(registerBody);
-
-        heartbeatData = new HeartbeatData();
-        MsgHead heartbeatHead = new MsgHead();
-        heartbeatHead.setMcode("000001");
-        heartbeatHead.setVer("0001");
-        heartbeatHead.setMsgatr("99");
-        heartbeatHead.setSafeflg("11");
-        heartbeatHead.setMac("");
-        HeartbeatBody heartbeatBody = new HeartbeatBody();
-        heartbeatBody.setSerial(Config.rootConfig.register);
-        heartbeatData.getHead().add(heartbeatHead);
-        heartbeatData.getBody().add(heartbeatBody);
-
-        if (Config.rootConfig.register.isEmpty()) {
-            Config.setIsWaitRegister(true);
-        }
-    }
-
-    public void sendHeartbeat(Channel channel) {
-        heartbeatData.getHead().get(0).generateIdAndTime();
-        String sendStr = encoder.encode(heartbeatData);
-        channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
-    }
-
-    public void sendRegisterData(Channel channel) {
-        registerData.getHead().get(0).generateIdAndTime();
-        String sendStr = encoder.encode(registerData);
-        channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
     }
 
     @Override
@@ -76,50 +32,58 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state() == IdleState.READER_IDLE) {
                 if (!Config.isIsWaitRegister()) {
-                    sendHeartbeat(ctx.channel());
+                    client.sendHeartbeat(ctx.channel());
                 }
-//                System.out.println("read idle");
             }
             else if (event.state() == IdleState.WRITER_IDLE) {
                 if (Config.isIsWaitRegister()) {
-                    sendRegisterData(ctx.channel());
+                    client.sendRegisterData(ctx.channel());
                 }
-                //System.out.println("write idle");
             }
-            else if (event.state() == IdleState.ALL_IDLE)
-                System.out.println("all idle");
+//            else if (event.state() == IdleState.ALL_IDLE)
+//                System.out.println("all idle");
         }
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 //        ctx.writeAndFlush(Unpooled.copiedBuffer("Netty rocks!\r\n", CharsetUtil.UTF_8));
+        LogHelper.info("通信信道激活");
         if (Config.rootConfig.register.isEmpty()) {
             Config.setIsWaitRegister(true);
-            sendRegisterData(ctx.channel());
+            client.sendRegisterData(ctx.channel());
         } else {
             Config.setIsWaitRegister(false);
-            sendHeartbeat(ctx.channel());
+            client.sendHeartbeat(ctx.channel());
         }
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) {
         leftStr += msg.toString(CharsetUtil.UTF_8);
-        System.out.println("Client received:" + msg.toString(CharsetUtil.UTF_8) + "\r\n");
 
         if (leftStr.length() >= 8) {
             int frameLen = Integer.parseInt(leftStr.substring(0,8));
             if (leftStr.length() >= frameLen + 8){
                 String encodeStr = leftStr.substring(8,8+frameLen);
                 leftStr = leftStr.substring(8+frameLen);
+                leftStr = StringUtils.substringAfter(leftStr, "#$D#$A");
                 String json = null;
                 try {
                     json = new String(Base64.getDecoder().decode(encodeStr),"utf-8");
+                    LogHelper.info("客户端接收数据:" + json);
                 } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
+                    LogHelper.warn("客户端接收数据decode失败：" + e.getMessage());
+                    return;
                 }
-                RespHead respHead = JSON.parseObject(json).getJSONArray("head").getJSONObject(0).toJavaObject(RespHead.class);
+
+                RespHead respHead = null;
+                try {
+                    respHead = JSON.parseObject(json).getJSONArray("head").getJSONObject(0).toJavaObject(RespHead.class);
+                } catch ( Exception e) {
+                    LogHelper.warn("客户端转换decode数据头失败：" + e.getMessage());
+                    return;
+                }
 
                 switch (respHead.getMcode())
                 {
@@ -127,7 +91,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
-                            Config.syncParamUpdate(false);
+//                            Config.syncParamUpdate(false);
                         }
                         break;
                     }
@@ -135,9 +99,14 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
-                            RespRegisterBody respRegisterBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespRegisterBody.class);
-                            Config.rootConfig.register = respRegisterBody.getDevno();
-                            Config.save();
+                            try {
+                                RespRegisterBody respRegisterBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespRegisterBody.class);
+                                Config.rootConfig.register = respRegisterBody.getDevno();
+                                Config.save();
+                                client.callBackObject.setCloudState(CloudState.CONNECTED);
+                            } catch (JSONException e) {
+                                LogHelper.warn("客户端转换注册body数据失败：" + e.getMessage());
+                            }
                         }
                         Config.setIsWaitRegister(false);
                         break;
@@ -158,7 +127,10 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         }
                         break;
                     }
-                    default:break;
+                    default: {
+                        LogHelper.warn("客户端收到不支持的Mcode：" + respHead.getMcode());
+                        break;
+                    }
                 }
             }
         }
@@ -167,12 +139,13 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
+        LogHelper.info("连接异常，关闭连接：" + cause.getMessage());
         ctx.close();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        LogHelper.info("通信信道失效");
         super.channelInactive(ctx);
         client.doConnect();
     }

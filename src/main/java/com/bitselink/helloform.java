@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 
+import com.alibaba.fastjson.JSONException;
 import com.bitselink.Client.CloudState;
 import com.bitselink.Client.EchoClient;
 import com.bitselink.config.*;
@@ -29,18 +30,43 @@ public class helloform implements ICallBack {
             }
             break;
             case NO_REGISTERED: {
-                echoClient.sendRegisterData();
+                echoClient.sendRegisterData(echoClient.getChannel());
             }
             break;
         }
     }
 
     public helloform() {
+        //读取配置
+        try {
+            if (!Config.read()) {
+                if (!Config.repair()) {
+                    Config.setIsAppError(true);
+                    labelSettingsResult.setText("重新创建配置文件失败");
+                    tabbedPane1.setSelectedIndex(2);
+                } else {
+                    init();
+                }
+            }
+            else {
+                LogHelper.info("读取配置文件成功");
+                init();
+            }
+        } catch (JSONException e) {
+            LogHelper.error("配置文件格式错误：" + e.getMessage());
+            Config.setIsAppError(true);
+            labelSettingsResult.setText("<html>配置文件格式错误：<br/>" + e.getMessage() + "</html>");
+            tabbedPane1.setSelectedIndex(2);
+        }
+    }
+
+    private void init() {
         //根据站点配置信息显示
         showConfigData();
         resourceBundle = ResourceBundle.getBundle("myProp", new Locale("zh", "CN"));
-        connector = new Connector();
         labelConnectInfo.setText(resourceBundle.getString("msg.noConnection"));
+        connector = new Connector();
+        LogHelper.info("创建通信客户端");
         echoClient = new EchoClient(this);
         echoClient.start();
 
@@ -136,19 +162,18 @@ public class helloform implements ICallBack {
             int option = JOptionPane.showConfirmDialog(null, "注意：请确认是否进行4G卡变更\r\n如选择是，将在服务器端注册为新停车场，请与服务器管理员确定是否允许注册！！\r\n如选择否，则继续使用已注册的停车场业务", "提示", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (option > 0) {
                 textFieldCloudPhone.setText(Config.rootConfig.cloud.phone);
-                cloudPhone = Config.rootConfig.cloud.phone;
             } else {
                 //使用新4G卡号，需要重新走注册流程
                 Config.rootConfig.register = "";
                 Config.setIsWaitRegister(true);
+                Config.rootConfig.cloud.ip = cloudIP;
+                Config.rootConfig.cloud.port = cloudPort;
+                Config.rootConfig.cloud.phone = cloudPhone;
+                Config.save();
                 setCloudState(CloudState.NO_REGISTERED);
+                LogHelper.info("使用新4G卡号，重新走注册流程：" + cloudPhone);
             }
         }
-
-        Config.rootConfig.cloud.ip = cloudIP;
-        Config.rootConfig.cloud.port = cloudPort;
-        Config.rootConfig.cloud.phone = cloudPhone;
-        Config.save();
     }
 
     private void doSiteConnect() {
@@ -526,6 +551,40 @@ public class helloform implements ICallBack {
         Font statusTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, statusTab.getFont());
         if (statusTabFont != null) statusTab.setFont(statusTabFont);
         tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.statusInfo"), statusTab);
+        final JPanel spacer3 = new JPanel();
+        gbc = new GridBagConstraints();
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        statusTab.add(spacer3, gbc);
+        final JPanel spacer4 = new JPanel();
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.VERTICAL;
+        statusTab.add(spacer4, gbc);
+        labelSettingsResult = new JLabel();
+        Font labelSettingsResultFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 28, labelSettingsResult.getFont());
+        if (labelSettingsResultFont != null) labelSettingsResult.setFont(labelSettingsResultFont);
+        labelSettingsResult.setText("");
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        statusTab.add(labelSettingsResult, gbc);
+        labelSettings = new JLabel();
+        Font labelSettingsFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 28, labelSettings.getFont());
+        if (labelSettingsFont != null) labelSettings.setFont(labelSettingsFont);
+        this.$$$loadLabelText$$$(labelSettings, ResourceBundle.getBundle("myProp").getString("ui.deviceStatus"));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.3;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        statusTab.add(labelSettings, gbc);
     }
 
     /**
@@ -610,14 +669,14 @@ public class helloform implements ICallBack {
 
     static class CloseWindowListener extends WindowAdapter {
         public void windowClosing(WindowEvent e) {
-            connector.closeDb();
+            if (null != connector) {
+                connector.closeDb();
+            }
             super.windowClosing(e);
         }
     }
 
     public static void main(String[] args) {
-        //读取配置
-        Config.read();
         JFrame frame = new JFrame("helloform");
         frame.setContentPane(new helloform().topPanel);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -663,6 +722,8 @@ public class helloform implements ICallBack {
     private JButton buttonCloudSave;
     private JLabel labelCloudPhone;
     private JTextField textFieldCloudPhone;
+    private JLabel labelSettings;
+    private JLabel labelSettingsResult;
     private JTextField textFieldStatus;
 
 }
