@@ -1,26 +1,36 @@
 package com.bitselink.config;
 
 public class SyncParam {
-    public String mathod;
+    public String method;
+    public int syncDays;
     public String from;
     public String to;
     public long carInTableId;
     public long carOutTableId;
 
     public SyncParam() {
-        mathod = "";
+        method = "";
         from = "";
         to = "";
+        syncDays = 7;
         carInTableId = -1;
         carOutTableId = -1;
     }
 
-    public String getMathod() {
-        return mathod;
+    public String getMethod() {
+        return method;
     }
 
-    public void setMathod(String mathod) {
-        this.mathod = mathod;
+    public void setMethod(String method) {
+        this.method = method;
+    }
+
+    public int getSyncDays() {
+        return syncDays;
+    }
+
+    public void setSyncDays(int syncDays) {
+        this.syncDays = syncDays;
     }
 
     public String getFrom() {

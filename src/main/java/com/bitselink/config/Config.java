@@ -7,10 +7,8 @@ import com.bitselink.LogHelper;
 import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
-import java.io.WriteAbortedException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Config {
     private static final String CONFIG_PATH = "sites.conf.json";
@@ -89,20 +87,30 @@ public class Config {
         if (!firstTime)
         {
             rootConfig.syncParam.from = rootConfig.syncParam.to;
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            rootConfig.syncParam.to = dateFormat.format(new Date());
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime afterDay = LocalDateTime.parse(rootConfig.syncParam.from, formatter).plusDays(1);
+            LocalDateTime now = LocalDateTime.now();
+            if (afterDay.isAfter(now)) {
+                rootConfig.syncParam.to = now.format(formatter);
+            } else {
+                rootConfig.syncParam.to = afterDay.format(formatter);
+            }
             rootConfig.syncParam.carInTableId = carInTableIndex;
             rootConfig.syncParam.carOutTableId = carOutTableIndex;
         } else {
-            if(rootConfig.syncParam.mathod.isEmpty()){
-                rootConfig.syncParam.mathod = "id";
+            if(rootConfig.syncParam.method.isEmpty()){
+                rootConfig.syncParam.method = "id";
             }
             if (rootConfig.syncParam.from.isEmpty()){
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Calendar calendar = Calendar.getInstance();
-                rootConfig.syncParam.to = dateFormat.format(calendar.getTime());
-                calendar.add(Calendar.DATE, -7);
-                rootConfig.syncParam.from = dateFormat.format(calendar.getTime());
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                LocalDateTime now = LocalDateTime.now();
+                if (0 >= rootConfig.syncParam.syncDays) {
+                    rootConfig.syncParam.from = now.minusSeconds(10).format(formatter);
+                    rootConfig.syncParam.to = now.format(formatter);
+                } else {
+                    rootConfig.syncParam.from = now.minusDays(rootConfig.syncParam.syncDays).format(formatter);
+                    rootConfig.syncParam.to = now.minusDays(rootConfig.syncParam.syncDays - 1).format(formatter);
+                }
                 rootConfig.syncParam.carInTableId = -1;
                 rootConfig.syncParam.carOutTableId = -1;
             }

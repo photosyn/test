@@ -107,6 +107,7 @@ public class Connector {
             session.close();
         }
         for (int i=0;i<parkingGroupData.getBody().size();i++){
+//            parkingGroupData.getBody().get(i).setDevno(Config.rootConfig.register);
             tableIndex = Math.max(tableIndex, Long.parseLong(parkingGroupData.getBody().get(i).getRecordid()));
         }
         return tableIndex;
@@ -118,26 +119,26 @@ public class Connector {
         parkingGroupData.getBody().clear();
         Map condition=new HashMap();
         condition.put("devNo", Config.rootConfig.register);
-        if (Config.rootConfig.syncParam.carInTableId > 0 && Config.rootConfig.syncParam.mathod.equals("id")){
+        if (Config.rootConfig.syncParam.carInTableId > 0 && Config.rootConfig.syncParam.method.equals("id")){
             condition.put("recordId", Config.rootConfig.syncParam.carInTableId);
-            LogHelper.info("carIn(recordId): > " + Config.rootConfig.syncParam.carInTableId);
+            LogHelper.info("抓取停车场入场数据：carIn(recordId) > " + Config.rootConfig.syncParam.carInTableId);
         }
         else {
             condition.put("timeFrom", Config.rootConfig.syncParam.from);
             condition.put("timeTo", Config.rootConfig.syncParam.to);
-            LogHelper.info("from:" + Config.rootConfig.syncParam.from + " to:" + Config.rootConfig.syncParam.to);
+            LogHelper.info("抓取停车场入场数据：from=" + Config.rootConfig.syncParam.from + " to=" + Config.rootConfig.syncParam.to);
         }
         rstInTable = checkParkingDataWithCondition("mybatis.parkingDataMapper.selectCarInByCondition", condition);
 
         condition.clear();
-        if (Config.rootConfig.syncParam.carOutTableId > 0 && Config.rootConfig.syncParam.mathod.equals("id")){
+        if (Config.rootConfig.syncParam.carOutTableId > 0 && Config.rootConfig.syncParam.method.equals("id")){
             condition.put("recordId", Config.rootConfig.syncParam.carOutTableId);
-            LogHelper.info("carOut(recordId): > " + Config.rootConfig.syncParam.carOutTableId);
+            LogHelper.info("抓取停车场出场数据：carOut(recordId) > " + Config.rootConfig.syncParam.carOutTableId);
         }
         else {
             condition.put("timeFrom", Config.rootConfig.syncParam.from);
             condition.put("timeTo", Config.rootConfig.syncParam.to);
-            LogHelper.info("from:" + Config.rootConfig.syncParam.from + " to:" + Config.rootConfig.syncParam.to);
+            LogHelper.info("抓取停车场出场数据：from=" + Config.rootConfig.syncParam.from + " to=" + Config.rootConfig.syncParam.to);
         }
         rstOutTable = checkParkingDataWithCondition("mybatis.parkingDataMapper.selectCarOutByCondition", condition);
 
