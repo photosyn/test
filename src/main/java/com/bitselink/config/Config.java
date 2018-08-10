@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Random;
 
 public class Config {
     public static class SyncResult {
@@ -26,7 +27,6 @@ public class Config {
     public static Root rootConfig;
     public static long carInTableIndex = -1;
     public static long carOutTableIndex = -1;
-    private static int msgId = 0;
     private static boolean isWaitRegister = false;
     private static boolean isAppError = false;
 
@@ -46,8 +46,25 @@ public class Config {
         Config.isWaitRegister = isWaitRegister;
     }
 
-    public static int getMsgId() {
-        return msgId++;
+    public static String randomMid()  {
+        try {
+            int len = 4;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMddHHmmss");
+            String nowDate = LocalDateTime.now().format(formatter);
+            StringBuffer result = new StringBuffer();
+            result.append(nowDate);
+            for(int i=0;i<len;i++) {
+                result.append(Integer.toHexString(new Random().nextInt(16)));
+            }
+            return result.toString().toUpperCase();
+
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+
+        }
+        return null;
+
     }
 
     public static boolean read() throws JSONException{

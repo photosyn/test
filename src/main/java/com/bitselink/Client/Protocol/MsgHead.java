@@ -17,7 +17,6 @@ public class MsgHead {
     private String mac;
 
     public void generateIdAndTime(){
-        int msgId = Config.getMsgId();
         DateFormat d1 = DateFormat.getDateInstance();
         DateFormat d2 = DateFormat.getTimeInstance();
         Date now = new Date();
@@ -25,7 +24,7 @@ public class MsgHead {
         String now_time = d2.format(now);
         setDate(now_date);
         setTime(now_time);
-        setMid(Integer.toString(msgId));
+        setMid(Config.randomMid());
         String sourceStr = "mcode='" + getMcode() + "'&mid='" + getMid() + "'&date='" + getDate() + "'&time='" + getTime() +
                 "'&ver='" + getVer() + "'&msgatr='" + getMsgatr() + "'&safeflg='" + getSafeflg() + "'&key='" + "02468ACE13579BDF'";
         String md5Str = DigestUtils.md5Hex(sourceStr);
