@@ -115,7 +115,11 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
-                            Config.syncParamUpdate(false);
+                            //接收到应答，更新查询条件
+                            //如果更新查询条件的事件是旧时间，则直接启动同步发送，否者等待定时时间到达之后再启动
+                            if (Config.syncParamUpdate(false)) {
+                                client.callBackObject.setParkingDataRespondReceived(true);
+                            }
                         }
                         break;
                     }
@@ -123,7 +127,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
-                            Config.syncParamUpdate(false);
+//                            Config.syncParamUpdate(false);
                         }
                         break;
                     }

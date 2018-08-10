@@ -11,6 +11,17 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Config {
+    public static class SyncResult {
+        public String syncTime;
+        public boolean isOldTime;
+
+        public SyncResult() {
+            syncTime = "";
+            isOldTime = true;
+        }
+    }
+
+    public static SyncResult syncResult = new Config.SyncResult();
     private static final String CONFIG_PATH = "sites.conf.json";
     public static Root rootConfig;
     public static long carInTableIndex = -1;
@@ -83,18 +94,26 @@ public class Config {
         return true;
     }
 
-    public static void syncParamUpdate(boolean firstTime){
+    private static void getNextSyncTime(String from, long minutes) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime afterDay = LocalDateTime.parse(from, formatter).plusMinutes(minutes);
+        LocalDateTime now = LocalDateTime.now();
+        if (afterDay.isAfter(now)) {
+            syncResult.isOldTime = false;
+            syncResult.syncTime = now.format(formatter);
+        } else {
+            syncResult.isOldTime = true;
+            syncResult.syncTime = afterDay.format(formatter);
+        }
+    }
+
+    public static boolean syncParamUpdate(boolean firstTime){
         if (!firstTime)
         {
             rootConfig.syncParam.from = rootConfig.syncParam.to;
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            LocalDateTime afterDay = LocalDateTime.parse(rootConfig.syncParam.from, formatter).plusDays(1);
-            LocalDateTime now = LocalDateTime.now();
-            if (afterDay.isAfter(now)) {
-                rootConfig.syncParam.to = now.format(formatter);
-            } else {
-                rootConfig.syncParam.to = afterDay.format(formatter);
-            }
+            getNextSyncTime(rootConfig.syncParam.from, 5);
+            rootConfig.syncParam.to = syncResult.syncTime;
+
             rootConfig.syncParam.carInTableId = carInTableIndex;
             rootConfig.syncParam.carOutTableId = carOutTableIndex;
         } else {
@@ -106,18 +125,22 @@ public class Config {
                 LocalDateTime now = LocalDateTime.now();
                 if (0 >= rootConfig.syncParam.syncDays) {
                     rootConfig.syncParam.from = now.minusSeconds(10).format(formatter);
-                    rootConfig.syncParam.to = now.format(formatter);
                 } else {
                     rootConfig.syncParam.from = now.minusDays(rootConfig.syncParam.syncDays).format(formatter);
-                    rootConfig.syncParam.to = now.minusDays(rootConfig.syncParam.syncDays - 1).format(formatter);
                 }
+                getNextSyncTime(rootConfig.syncParam.from, 5);
+                rootConfig.syncParam.to = syncResult.syncTime;
                 rootConfig.syncParam.carInTableId = -1;
                 rootConfig.syncParam.carOutTableId = -1;
+            } else {
+                getNextSyncTime(rootConfig.syncParam.from, 5);
+                rootConfig.syncParam.to = syncResult.syncTime;
             }
             carInTableIndex = rootConfig.syncParam.carInTableId;
             carOutTableIndex = rootConfig.syncParam.carOutTableId;
         }
         save();
+        return syncResult.isOldTime;
 //        System.out.println("from:" + rootConfig.syncTime.from + " to:" + rootConfig.syncTime.to);
     }
 }

@@ -6,14 +6,12 @@ import com.bitselink.config.Site;
 import com.bitselink.Client.Protocol.MsgHead;
 import com.bitselink.domain.ParkingGroupData;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import com.microsoft.sqlserver.jdbc.SQLServerException;
-import org.apache.ibatis.exceptions.PersistenceException;
+
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -34,6 +32,10 @@ public class Connector {
 
     public boolean isConnected() {
         return isConnected;
+    }
+
+    public ParkingGroupData getParkingGroupData() {
+        return parkingGroupData;
     }
 
     public Connector() {
@@ -88,12 +90,14 @@ public class Connector {
     }
 
     private boolean connectTest() {
+        SqlSession session = sqlSessionFactory.openSession();
         try {
-            SqlSession session = sqlSessionFactory.openSession();
             session.selectOne("mybatis.parkingDataMapper.connectTest");
         } catch (Exception e) {
             LogHelper.warn("连接数据库失败：" + e.getMessage());
             return false;
+        }finally {
+            session.close();
         }
         return true;
     }
@@ -103,6 +107,7 @@ public class Connector {
         SqlSession session = sqlSessionFactory.openSession();
         try{
             parkingGroupData.getBody().addAll(session.selectList(mybatisMapper, condition));
+//            parkingGroupData.getBody().addAll(session.selectList("selectTest", condition));
         } finally {
             session.close();
         }
@@ -113,25 +118,34 @@ public class Connector {
         return tableIndex;
     }
 
-    public ParkingGroupData checkParkingData(){
+    //检查停车场数据，如果检查结果是需要立即查询历史数据，则返回ture
+    public boolean checkParkingData(){
+        boolean syncHistory = false;
         long rstInTable = -1;
         long rstOutTable = -1;
         parkingGroupData.getBody().clear();
         Map condition=new HashMap();
         condition.put("devNo", Config.rootConfig.register);
-        if (Config.rootConfig.syncParam.carInTableId > 0 && Config.rootConfig.syncParam.method.equals("id")){
+        if (Config.rootConfig.syncParam.carInTableId > 0
+                && Config.rootConfig.syncParam.method.equals("id")
+                && !Config.syncResult.isOldTime){
             condition.put("recordId", Config.rootConfig.syncParam.carInTableId);
             LogHelper.info("抓取停车场入场数据：carIn(recordId) > " + Config.rootConfig.syncParam.carInTableId);
         }
         else {
+//            condition.put("timeFrom", "2018-07-10 10:00:00");
             condition.put("timeFrom", Config.rootConfig.syncParam.from);
+//            condition.put("timeTo", "2018-08-10 10:00:00");
             condition.put("timeTo", Config.rootConfig.syncParam.to);
             LogHelper.info("抓取停车场入场数据：from=" + Config.rootConfig.syncParam.from + " to=" + Config.rootConfig.syncParam.to);
         }
         rstInTable = checkParkingDataWithCondition("mybatis.parkingDataMapper.selectCarInByCondition", condition);
 
         condition.clear();
-        if (Config.rootConfig.syncParam.carOutTableId > 0 && Config.rootConfig.syncParam.method.equals("id")){
+        condition.put("devNo", Config.rootConfig.register);
+        if (Config.rootConfig.syncParam.carOutTableId > 0
+                && Config.rootConfig.syncParam.method.equals("id")
+                && !Config.syncResult.isOldTime){
             condition.put("recordId", Config.rootConfig.syncParam.carOutTableId);
             LogHelper.info("抓取停车场出场数据：carOut(recordId) > " + Config.rootConfig.syncParam.carOutTableId);
         }
@@ -144,11 +158,14 @@ public class Connector {
 
         Config.carInTableIndex = Math.max(Config.carInTableIndex, rstInTable);
         Config.carOutTableIndex = Math.max(Config.carOutTableIndex, rstOutTable);
+        //没有查到数据，更新查询条件
         if (rstInTable < 0 && rstOutTable < 0){
-            Config.syncParamUpdate(false);
+            //如果是同步历史数据
+            if (Config.syncParamUpdate(false)) {
+                syncHistory = true;
+            }
         }
-
-        return parkingGroupData;
+        return syncHistory;
     }
 
     public void closeDb(){

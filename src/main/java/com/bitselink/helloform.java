@@ -6,6 +6,7 @@ import java.awt.event.*;
 import java.sql.*;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.TimerTask;
 import java.util.regex.Pattern;
 
 import com.alibaba.fastjson.JSONException;
@@ -33,6 +34,19 @@ public class helloform implements ICallBack {
                 echoClient.sendRegisterData(echoClient.getChannel());
             }
             break;
+        }
+    }
+
+    @Override
+    public void setParkingDataRespondReceived(boolean received) {
+        if (received) {
+            timer.restart();
+            oneTimeTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    checkParkingData();
+                }
+            }, 0);
         }
     }
 
@@ -100,10 +114,25 @@ public class helloform implements ICallBack {
         ActionListener actionListener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                echoClient.sendParkingData(connector.checkParkingData());
+                checkParkingData();
             }
         };
         timer = new Timer(10000, actionListener);
+        oneTimeTimer = new java.util.Timer();
+    }
+
+    private void checkParkingData() {
+        if (connector.checkParkingData()) {
+            timer.restart();
+            oneTimeTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    checkParkingData();
+                }
+            }, 0);
+        } else {
+            echoClient.sendParkingData(connector.getParkingGroupData());
+        }
     }
 
     private void showConfigData() {
@@ -176,6 +205,10 @@ public class helloform implements ICallBack {
                 setCloudState(CloudState.NO_REGISTERED);
                 LogHelper.info("使用新4G卡号，重新走注册流程：" + cloudPhone);
             }
+        } else {
+            Config.rootConfig.cloud.ip = cloudIP;
+            Config.rootConfig.cloud.port = cloudPort;
+            Config.save();
         }
     }
 
@@ -191,7 +224,8 @@ public class helloform implements ICallBack {
         if (connector.connectDbMybatis(site)) {
             labelConnectInfo.setText(resourceBundle.getString("msg.connectSuccess"));
             saveSiteConfigData();
-            echoClient.sendParkingData(connector.checkParkingData());
+            connector.checkParkingData();
+            echoClient.sendParkingData(connector.getParkingGroupData());
             timer.start();
         } else {
             labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
@@ -681,14 +715,20 @@ public class helloform implements ICallBack {
     }
 
     public static void main(String[] args) {
-        LogHelper.info("程序启动，版本：" + SOFT_VER);
-        JFrame frame = new JFrame("helloform");
-        frame.setContentPane(new helloform().topPanel);
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.addWindowListener(new CloseWindowListener());
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+
+        EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                LogHelper.info("程序启动，版本：" + SOFT_VER);
+                JFrame frame = new JFrame("helloform");
+                frame.setContentPane(new helloform().topPanel);
+                frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+                frame.pack();
+                frame.addWindowListener(new CloseWindowListener());
+                frame.setLocationRelativeTo(null);
+                frame.setVisible(true);
+            }
+        });
     }
 
     static private final String SOFT_VER = "V1.0(a)";
@@ -699,6 +739,7 @@ public class helloform implements ICallBack {
     private ResourceBundle resourceBundle;
     private Timer timer;
     private EchoClient echoClient;
+    private java.util.Timer oneTimeTimer;
 
     private JPanel topPanel;
     private JTabbedPane tabbedPane1;
