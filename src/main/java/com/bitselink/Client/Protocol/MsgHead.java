@@ -7,6 +7,11 @@ import java.util.Date;
 import org.apache.commons.codec.digest.DigestUtils;
 
 public class MsgHead {
+    public static final String VER = "0001";
+    public static final String HEAD_HEART = "99";
+    public static final String HEAD_REQUEST = "20";
+    public static final String SAFEFLAG_ALL = "11";
+
     private String mcode;
     private String mid;
     private String date;

@@ -19,11 +19,13 @@ import java.util.Base64;
 public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private EchoClient client;
     private String leftStr;
+    private int heartTimeoutCnt;
 
     public EchoClientHandler(EchoClient client) {
         super();
         this.client = client;
         leftStr = "";
+        heartTimeoutCnt = 0;
     }
 
     @Override
@@ -31,15 +33,29 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         if (IdleStateEvent.class.isAssignableFrom(evt.getClass())) {
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state() == IdleState.READER_IDLE) {
-                if (!Config.isIsWaitRegister()) {
-                    client.sendHeartbeat(ctx.channel());
+                if (heartTimeoutCnt >= 1) {
+                    ctx.close();
+                }else {
+                    if (Config.isIsWaitRegister()) {
+                        client.sendRegisterData(ctx.channel());
+                    } else {
+                        client.sendHeartbeat(ctx.channel());
+                    }
+                    heartTimeoutCnt++;
                 }
+
             }
-            else if (event.state() == IdleState.WRITER_IDLE) {
-                if (Config.isIsWaitRegister()) {
-                    client.sendRegisterData(ctx.channel());
-                }
-            }
+//            else if (event.state() == IdleState.WRITER_IDLE) {
+//                if (Config.isIsWaitRegister()) {
+//                    if (heartTimeoutCnt >= 1) {
+//                        ctx.close();
+//                    }else {
+//                        client.sendRegisterData(ctx.channel());
+//                        heartTimeoutCnt++;
+//                    }
+//
+//                }
+//            }
 //            else if (event.state() == IdleState.ALL_IDLE)
 //                System.out.println("all idle");
         }
@@ -48,13 +64,15 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 //        ctx.writeAndFlush(Unpooled.copiedBuffer("Netty rocks!\r\n", CharsetUtil.UTF_8));
-        LogHelper.info("通信信道激活");
+        LogHelper.info("通信信道：" + ctx.channel().remoteAddress() + "激活");
         if (Config.rootConfig.register.isEmpty()) {
             Config.setIsWaitRegister(true);
             client.sendRegisterData(ctx.channel());
+            heartTimeoutCnt = 1;
         } else {
             Config.setIsWaitRegister(false);
             client.sendHeartbeat(ctx.channel());
+            heartTimeoutCnt = 1;
         }
     }
 
@@ -85,20 +103,26 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     return;
                 }
 
-                switch (respHead.getMcode())
+                switch (MCodeType.getByValue(respHead.getMcode()))
                 {
-                    case "000001":
+                    case M_CODE_TYPE_HEART_BEAT:
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
+                            if(heartTimeoutCnt > 0){
+                                heartTimeoutCnt--;
+                            }
 //                            Config.syncParamUpdate(false);
                         }
                         break;
                     }
-                    case "100001":
+                    case M_CODE_TYPE_REGESTER:
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
+                            if(heartTimeoutCnt > 0){
+                                heartTimeoutCnt--;
+                            }
                             try {
                                 RespRegisterBody respRegisterBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespRegisterBody.class);
                                 Config.rootConfig.register = respRegisterBody.getDevno();
@@ -111,7 +135,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         Config.setIsWaitRegister(false);
                         break;
                     }
-                    case "100002":
+                    case M_CODE_TYPE_PARK_DATA:
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
@@ -123,7 +147,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         }
                         break;
                     }
-                    case "100003":
+                    case M_CODE_TYPE_INFO:
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
@@ -149,7 +173,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        LogHelper.info("通信信道失效");
+        LogHelper.info("通信信道：" + ctx.channel().remoteAddress() + "失效");
         super.channelInactive(ctx);
         client.doConnect();
     }

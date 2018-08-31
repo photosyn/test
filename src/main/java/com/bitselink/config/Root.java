@@ -3,14 +3,24 @@ package com.bitselink.config;
 public class Root {
     public Site site;
     public Cloud cloud;
+    public HuichiParam huichiParam;
     public SyncParam syncParam;
     public String register;
+    public String databaseType;
 
     public Root() {
         site = new Site();
         cloud = new Cloud();
-        syncParam = new SyncParam();
         register = "";
+        databaseType = "";
+    }
+
+    public String getDatabaseType() {
+        return databaseType;
+    }
+
+    public void setDatabaseType(String databaseType) {
+        this.databaseType = databaseType;
     }
 
     public String getRegister() {
@@ -21,12 +31,12 @@ public class Root {
         this.register = register;
     }
 
-    public SyncParam getSyncParam() {
-        return syncParam;
+    public HuichiParam getHuichiParam() {
+        return huichiParam;
     }
 
-    public void setSyncParam(SyncParam syncParam) {
-        this.syncParam = syncParam;
+    public void setHuichiParam(HuichiParam huichiParam) {
+        this.huichiParam = huichiParam;
     }
 
     public Site getSite() {

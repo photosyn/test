@@ -3,6 +3,7 @@ package com.bitselink;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.net.URL;
 import java.sql.*;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -117,12 +118,13 @@ public class helloform implements ICallBack {
                 checkParkingData();
             }
         };
-        timer = new Timer(10000, actionListener);
+        timer = new Timer(2000, actionListener);
         oneTimeTimer = new java.util.Timer();
     }
 
     private void checkParkingData() {
         if (connector.checkParkingData()) {
+            timer.stop();
             timer.restart();
             oneTimeTimer.schedule(new TimerTask() {
                 @Override
@@ -153,10 +155,10 @@ public class helloform implements ICallBack {
     }
 
     private void saveSiteConfigData() {
-        if (!Pattern.matches(IP_PATTERN, textFieldIp.getText())) {
-            JOptionPane.showMessageDialog(null, labelIp.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+//        if (!Pattern.matches(IP_PATTERN, textFieldIp.getText())) {
+//            JOptionPane.showMessageDialog(null, labelIp.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
+//            return;
+//        }
 
         if (!Pattern.matches(PORT_PATTERN, textFieldPort.getText())) {
             JOptionPane.showMessageDialog(null, labelPort.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
@@ -173,10 +175,10 @@ public class helloform implements ICallBack {
 
     private void saveCouldConfigData() {
         String cloudIP = textFieldCloudIp.getText();
-        if (!Pattern.matches(IP_PATTERN, cloudIP)) {
-            JOptionPane.showMessageDialog(null, labelCloudIp.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+//        if (!Pattern.matches(IP_PATTERN, cloudIP)) {
+//            JOptionPane.showMessageDialog(null, labelCloudIp.getText() + "格式错误", "错误", JOptionPane.ERROR_MESSAGE);
+//            return;
+//        }
 
         String cloudPort = textFieldCloudPort.getText();
         if (!Pattern.matches(PORT_PATTERN, textFieldCloudPort.getText())) {
@@ -720,7 +722,9 @@ public class helloform implements ICallBack {
             @Override
             public void run() {
                 LogHelper.info("程序启动，版本：" + SOFT_VER);
-                JFrame frame = new JFrame("helloform");
+                JFrame frame = new JFrame("车量监控终端");
+                ImageIcon icon = new ImageIcon(this.getClass().getResource("/image/car.png"));
+                frame.setIconImage(icon.getImage());
                 frame.setContentPane(new helloform().topPanel);
                 frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
                 frame.pack();
@@ -731,7 +735,7 @@ public class helloform implements ICallBack {
         });
     }
 
-    static private final String SOFT_VER = "V1.0(a)";
+    static private final String SOFT_VER = "V1.0(d)";
     static private final String IP_PATTERN = "^(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])$";
     static private final String PORT_PATTERN = "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5])$";
     static private final String PHONE_PATTERN = "^1(3|4|5|7|8)\\d{9}$";

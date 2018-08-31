@@ -37,20 +37,20 @@ public class EchoClient {
 
         registerData = new RegisterData();
         MsgHead registerHead = new MsgHead();
-        registerHead.setMcode("100001");
-        registerHead.setVer("0001");
-        registerHead.setMsgatr("20");
-        registerHead.setSafeflg("11");
+        registerHead.setMcode(MCodeType.M_CODE_TYPE_REGESTER.getMsg());
+        registerHead.setVer(MsgHead.VER);
+        registerHead.setMsgatr(MsgHead.HEAD_REQUEST);
+        registerHead.setSafeflg(MsgHead.SAFEFLAG_ALL);
         RegisterBody registerBody = new RegisterBody();
         registerData.getHead().add(registerHead);
         registerData.getBody().add(registerBody);
 
         heartbeatData = new HeartbeatData();
         MsgHead heartbeatHead = new MsgHead();
-        heartbeatHead.setMcode("000001");
-        heartbeatHead.setVer("0001");
-        heartbeatHead.setMsgatr("99");
-        heartbeatHead.setSafeflg("11");
+        heartbeatHead.setMcode(MCodeType.M_CODE_TYPE_HEART_BEAT.getMsg());
+        heartbeatHead.setVer(MsgHead.VER);
+        heartbeatHead.setMsgatr(MsgHead.HEAD_HEART);
+        heartbeatHead.setSafeflg(MsgHead.SAFEFLAG_ALL);
         HeartbeatBody heartbeatBody = new HeartbeatBody();
         heartbeatBody.setSerial(Config.rootConfig.register);
         heartbeatData.getHead().add(heartbeatHead);
@@ -103,7 +103,7 @@ public class EchoClient {
                         @Override
                         protected void initChannel(SocketChannel ch) {
                             ch.pipeline().addLast("logging", new LoggingHandler(LogLevel.INFO));
-                            ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(20,10,0));
+                            ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(20,0,0));
                             ch.pipeline().addLast(new EchoClientHandler(EchoClient.this));
                         }
                     });
@@ -134,10 +134,10 @@ public class EchoClient {
                     channel = futureListener.channel();
                     if (Config.rootConfig.register.isEmpty()) {
                         callBackObject.setCloudState(CloudState.NO_REGISTERED);
-                        LogHelper.warn("中心服务器连接成功，设备未注册");
+                        LogHelper.warn("中心服务器：" + channel.remoteAddress() + "连接成功，设备未注册");
                     } else {
                         callBackObject.setCloudState(CloudState.CONNECTED);
-                        LogHelper.info("中心服务器连接成功，设备已注册");
+                        LogHelper.info("中心服务器：" + channel.remoteAddress() + "连接成功，设备已注册");
                     }
                 } else {
                     callBackObject.setCloudState(CloudState.CONNECT_FAIL);
