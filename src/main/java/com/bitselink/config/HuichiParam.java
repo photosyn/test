@@ -11,7 +11,7 @@ public class HuichiParam {
     public long outTableOutIndex;
 
     public HuichiParam() {
-        method = "";
+        method = "id";
         from = "";
         to = "";
         syncDays = 7;

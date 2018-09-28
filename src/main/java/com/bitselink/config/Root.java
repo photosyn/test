@@ -15,6 +15,11 @@ public class Root {
         databaseType = "";
     }
 
+    public void Reset() {
+        register = "";
+        databaseType = "";
+    }
+
     public String getDatabaseType() {
         return databaseType;
     }

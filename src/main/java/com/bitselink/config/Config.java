@@ -127,6 +127,11 @@ public class Config {
         return true;
     }
 
+    public static boolean reset() {
+        rootConfig = new Root();
+        return save();
+    }
+
     private static void getNextSyncTime(String from, long minutes) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime afterDay = LocalDateTime.parse(from, formatter).plusMinutes(minutes);

@@ -128,6 +128,7 @@ public class Connector {
         long rstInTableInIndex = -1;
         long rstOutTableOutIndex = -1;
         long rstOutTableInIndex = -1;
+        long rstInTableOutIndex = -1;
         parkingGroupData.getBody().clear();
         Map condition=new HashMap();
 
@@ -164,24 +165,40 @@ public class Connector {
 
         condition.clear();
         condition.put("devNo", Config.rootConfig.register);
-        if (Config.rootConfig.huichiParam.outTableOutIndex > 0
+        if (Config.rootConfig.huichiParam.inTableOutIndex > 0
                 && Config.rootConfig.huichiParam.method.equals("id")
                 && !Config.syncResult.isOldTime){
-            condition.put("recordId", Config.rootConfig.huichiParam.outTableOutIndex);
-            LogHelper.info("抓取停车场出场数据：carOut(recordId) > " + Config.rootConfig.huichiParam.outTableOutIndex);
+            condition.put("recordId", Config.rootConfig.huichiParam.inTableOutIndex);
+            LogHelper.info("抓取停车场出场数据1：inTableOutIndex(recordId) > " + Config.rootConfig.huichiParam.inTableOutIndex);
         }
         else {
             condition.put("timeFrom", Config.rootConfig.huichiParam.from);
             condition.put("timeTo", Config.rootConfig.huichiParam.to);
-            LogHelper.info("抓取停车场出场数据：from=" + Config.rootConfig.huichiParam.from + " to=" + Config.rootConfig.huichiParam.to);
+            LogHelper.info("抓取停车场出场数据1：from=" + Config.rootConfig.huichiParam.from + " to=" + Config.rootConfig.huichiParam.to);
+        }
+        rstInTableOutIndex = checkParkingDataWithCondition("mybatis.parkingDataMapper.outDataInComeTable", condition);
+
+        condition.clear();
+        condition.put("devNo", Config.rootConfig.register);
+        if (Config.rootConfig.huichiParam.outTableOutIndex > 0
+                && Config.rootConfig.huichiParam.method.equals("id")
+                && !Config.syncResult.isOldTime){
+            condition.put("recordId", Config.rootConfig.huichiParam.outTableOutIndex);
+            LogHelper.info("抓取停车场出场数据2：outTableOutIndex(recordId) > " + Config.rootConfig.huichiParam.outTableOutIndex);
+        }
+        else {
+            condition.put("timeFrom", Config.rootConfig.huichiParam.from);
+            condition.put("timeTo", Config.rootConfig.huichiParam.to);
+            LogHelper.info("抓取停车场出场数据2：from=" + Config.rootConfig.huichiParam.from + " to=" + Config.rootConfig.huichiParam.to);
         }
         rstOutTableOutIndex = checkParkingDataWithCondition("mybatis.parkingDataMapper.outDataInOutTable", condition);
 
         Config.huichiParam.inTableInIndex = Math.max(Config.huichiParam.inTableInIndex, rstInTableInIndex);
         Config.huichiParam.outTableInIndex = Math.max(Config.huichiParam.outTableInIndex, rstOutTableInIndex);
         Config.huichiParam.outTableOutIndex = Math.max(Config.huichiParam.outTableOutIndex, rstOutTableOutIndex);
+        Config.huichiParam.inTableOutIndex = Math.max(Config.huichiParam.inTableOutIndex, rstInTableOutIndex);
         //没有查到数据，更新查询条件
-        if (rstInTableInIndex < 0 && rstOutTableInIndex < 0 && rstOutTableOutIndex < 0){
+        if (rstInTableInIndex < 0 && rstOutTableInIndex < 0 && rstOutTableOutIndex < 0 && rstInTableOutIndex < 0){
             //如果是同步历史数据
             if (Config.syncParamUpdate(false)) {
                 syncHistory = true;

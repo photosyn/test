@@ -19,6 +19,8 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class EchoClient {
@@ -30,6 +32,7 @@ public class EchoClient {
     private BitLinkEncoder encoder;
     private RegisterData registerData;
     private HeartbeatData heartbeatData;
+    private List<DiagnosisData> diagnosisHistory;
 
     public EchoClient(ICallBack obj){
         this.callBackObject = obj;
@@ -56,9 +59,9 @@ public class EchoClient {
         heartbeatData.getHead().add(heartbeatHead);
         heartbeatData.getBody().add(heartbeatBody);
 
-        if (Config.rootConfig.register.isEmpty()) {
-            Config.setIsWaitRegister(true);
-        }
+        diagnosisHistory = new ArrayList<>();
+
+        Config.setIsWaitRegister(true);
     }
 
     public Channel getChannel() {
@@ -78,6 +81,7 @@ public class EchoClient {
         if (channel != null && channel.isActive()) {
             registerData.getHead().get(0).generateIdAndTime();
             registerData.getBody().get(0).setTelno(Config.rootConfig.cloud.phone);
+            registerData.getBody().get(0).setDevno(Config.rootConfig.register);
             String sendStr = encoder.encode(registerData);
             channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
         }
@@ -89,6 +93,39 @@ public class EchoClient {
             {
                 parkingGroupData.getHead().get(0).generateIdAndTime();
                 String sendStr = encoder.encode(parkingGroupData);
+                channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+            }
+        }
+    }
+
+    public void addDiagnosisData(String diagnosisInfo, int level) {
+        DiagnosisData diagnosisData = new DiagnosisData();
+        MsgHead diagnosisHead = new MsgHead();
+        diagnosisHead.setMcode(MCodeType.M_CODE_TYPE_DIAGNOSIS.getMsg());
+        diagnosisHead.setVer(MsgHead.VER);
+        diagnosisHead.setMsgatr(MsgHead.HEAD_REQUEST);
+        diagnosisHead.setSafeflg(MsgHead.SAFEFLAG_ALL);
+        DiagnosisBody diagnosisBody = new DiagnosisBody();
+        diagnosisBody.setDevno(Config.rootConfig.register);
+        diagnosisBody.setErrorlevel(level);
+        diagnosisData.getHead().add(diagnosisHead);
+        diagnosisData.getBody().add(diagnosisBody);
+        if (diagnosisData.getBody().size() > 0)
+        {
+            diagnosisData.getHead().get(0).generateIdAndTime();
+            diagnosisData.getBody().get(0).generateTime();
+            diagnosisData.getBody().get(0).setDevno(Config.rootConfig.register);
+            diagnosisData.getBody().get(0).setErrormsg(diagnosisInfo);
+        }
+        diagnosisHistory.add(diagnosisData);
+    }
+
+    public void sendDiagnosisData(){
+        if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
+            if(diagnosisHistory.size() > 0)
+            {
+                DiagnosisData diagnosisData = diagnosisHistory.remove(0);
+                String sendStr = encoder.encode(diagnosisData);
                 channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
             }
         }
@@ -133,14 +170,14 @@ public class EchoClient {
                 if (futureListener.isSuccess()){
                     channel = futureListener.channel();
                     if (Config.rootConfig.register.isEmpty()) {
-                        callBackObject.setCloudState(CloudState.NO_REGISTERED);
+                        callBackObject.setCloudState(CloudState.NO_REGISTERED,"");
                         LogHelper.warn("中心服务器：" + channel.remoteAddress() + "连接成功，设备未注册");
                     } else {
-                        callBackObject.setCloudState(CloudState.CONNECTED);
+                        callBackObject.setCloudState(CloudState.CONNECTED, "");
                         LogHelper.info("中心服务器：" + channel.remoteAddress() + "连接成功，设备已注册");
                     }
                 } else {
-                    callBackObject.setCloudState(CloudState.CONNECT_FAIL);
+                    callBackObject.setCloudState(CloudState.CONNECT_FAIL, "");
                     LogHelper.warn("中心服务器连接失败，10秒后重新尝试");
                     futureListener.channel().eventLoop().schedule(new Runnable() {
                         @Override

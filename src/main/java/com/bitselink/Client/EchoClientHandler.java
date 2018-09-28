@@ -65,15 +65,8 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 //        ctx.writeAndFlush(Unpooled.copiedBuffer("Netty rocks!\r\n", CharsetUtil.UTF_8));
         LogHelper.info("通信信道：" + ctx.channel().remoteAddress() + "激活");
-        if (Config.rootConfig.register.isEmpty()) {
-            Config.setIsWaitRegister(true);
-            client.sendRegisterData(ctx.channel());
-            heartTimeoutCnt = 1;
-        } else {
-            Config.setIsWaitRegister(false);
-            client.sendHeartbeat(ctx.channel());
-            heartTimeoutCnt = 1;
-        }
+        client.sendRegisterData(ctx.channel());
+        heartTimeoutCnt = 1;
     }
 
     @Override
@@ -112,6 +105,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                             if(heartTimeoutCnt > 0){
                                 heartTimeoutCnt--;
                             }
+                            client.sendDiagnosisData();
 //                            Config.syncParamUpdate(false);
                         }
                         break;
@@ -127,12 +121,20 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                                 RespRegisterBody respRegisterBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespRegisterBody.class);
                                 Config.rootConfig.register = respRegisterBody.getDevno();
                                 Config.save();
-                                client.callBackObject.setCloudState(CloudState.CONNECTED);
+                                client.callBackObject.setCloudState(CloudState.CONNECTED,"");
+                            } catch (JSONException e) {
+                                LogHelper.warn("客户端转换注册body数据失败：" + e.getMessage());
+                            }
+                            Config.setIsWaitRegister(false);
+                        }
+                        else {
+                            try {
+                                RespRegisterBody respRegisterBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespRegisterBody.class);
+                                client.callBackObject.setCloudState(CloudState.REGISTER_FAIL,respRegisterBody.getRetmsg());
                             } catch (JSONException e) {
                                 LogHelper.warn("客户端转换注册body数据失败：" + e.getMessage());
                             }
                         }
-                        Config.setIsWaitRegister(false);
                         break;
                     }
                     case M_CODE_TYPE_PARK_DATA:
@@ -147,11 +149,12 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         }
                         break;
                     }
-                    case M_CODE_TYPE_INFO:
+                    case M_CODE_TYPE_DIAGNOSIS:
                     {
                         if(respHead.getRcode().equals("0000"))
                         {
 //                            Config.syncParamUpdate(false);
+                            client.sendDiagnosisData();
                         }
                         break;
                     }

@@ -1,24 +1,38 @@
 package com.bitselink;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.math.BigInteger;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.URL;
+import java.security.MessageDigest;
 import java.sql.*;
-import java.util.Locale;
-import java.util.ResourceBundle;
-import java.util.TimerTask;
+import java.text.DateFormat;
+import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.bitselink.Client.CloudState;
 import com.bitselink.Client.EchoClient;
+import com.bitselink.Client.Protocol.DiagnosisBody;
 import com.bitselink.config.*;
 import com.bitselink.connection.Connector;
+import org.apache.commons.io.FileUtils;
 
 public class helloform implements ICallBack {
     @Override
-    public void setCloudState(CloudState state) {
+    public void setCloudState(CloudState state, String info) {
         labelCloudInfo.setText(resourceBundle.getString(state.getName()));
         switch (state) {
             case CONNECTED: {
@@ -32,7 +46,21 @@ public class helloform implements ICallBack {
             }
             break;
             case NO_REGISTERED: {
-                echoClient.sendRegisterData(echoClient.getChannel());
+            }
+            break;
+            case REGISTER_FAIL: {
+                labelCloudInfo.setText(resourceBundle.getString(state.getName()));
+                DateFormat d1 = DateFormat.getDateTimeInstance();
+                Date now = new Date();
+                statusInfoList.addFirst("[" + d1.format(now) + "] " + info + "\r\n");
+                if (statusInfoList.size() > 8) {
+                    statusInfoList.removeLast();
+                }
+                String statusInfoTotal = "";
+                for (String statusInfo : statusInfoList) {
+                    statusInfoTotal += statusInfo;
+                }
+                textpaneStatusInfo.setText(statusInfoTotal);
             }
             break;
         }
@@ -76,6 +104,7 @@ public class helloform implements ICallBack {
 
     private void init() {
         //根据站点配置信息显示
+        statusInfoList = new LinkedList<String>();
         showConfigData();
         resourceBundle = ResourceBundle.getBundle("myProp", new Locale("zh", "CN"));
         labelConnectInfo.setText(resourceBundle.getString("msg.noConnection"));
@@ -109,6 +138,20 @@ public class helloform implements ICallBack {
             @Override
             public void actionPerformed(ActionEvent e) {
                 saveCouldConfigData();
+            }
+        });
+        buttonDefault.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+//                showMacAddr();
+                if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, "是否恢复出场设置", "提示", JOptionPane.YES_NO_OPTION)) {
+                    if (Config.reset()) {
+                        showConfigData();
+                        JOptionPane.showMessageDialog(null, "恢复出场设置成功", "提示", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "恢复出场设置失败，请联系客服", "错误", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
             }
         });
 
@@ -204,7 +247,7 @@ public class helloform implements ICallBack {
                 Config.rootConfig.cloud.port = cloudPort;
                 Config.rootConfig.cloud.phone = cloudPhone;
                 Config.save();
-                setCloudState(CloudState.NO_REGISTERED);
+                setCloudState(CloudState.NO_REGISTERED, "");
                 LogHelper.info("使用新4G卡号，重新走注册流程：" + cloudPhone);
             }
         } else {
@@ -231,6 +274,8 @@ public class helloform implements ICallBack {
             timer.start();
         } else {
             labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
+            echoClient.addDiagnosisData("连接数据库失败", DiagnosisBody.HIGH_LEVEL);
+            echoClient.sendDiagnosisData();
         }
     }
 
@@ -324,7 +369,7 @@ public class helloform implements ICallBack {
         Font connectTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, connectTab.getFont());
         if (connectTabFont != null) connectTab.setFont(connectTabFont);
         connectTab.setVisible(false);
-        tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.site"), connectTab);
+        tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.parker"), connectTab);
         comboBoxDatabase = new JComboBox();
         Font comboBoxDatabaseFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, comboBoxDatabase.getFont());
         if (comboBoxDatabaseFont != null) comboBoxDatabase.setFont(comboBoxDatabaseFont);
@@ -586,44 +631,60 @@ public class helloform implements ICallBack {
         gbc.fill = GridBagConstraints.BOTH;
         cloudTab.add(textFieldCloudPhone, gbc);
         statusTab = new JPanel();
-        statusTab.setLayout(new GridBagLayout());
+        statusTab.setLayout(new BorderLayout(0, 0));
         Font statusTabFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.PLAIN, 28, statusTab.getFont());
         if (statusTabFont != null) statusTab.setFont(statusTabFont);
         tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.statusInfo"), statusTab);
+        textpaneStatusInfo = new JTextPane();
+        textpaneStatusInfo.setDropMode(DropMode.USE_SELECTION);
+        textpaneStatusInfo.setEditable(false);
+        Font textpaneStatusInfoFont = this.$$$getFont$$$("Microsoft YaHei UI", -1, 20, textpaneStatusInfo.getFont());
+        if (textpaneStatusInfoFont != null) textpaneStatusInfo.setFont(textpaneStatusInfoFont);
+        textpaneStatusInfo.setText("");
+        statusTab.add(textpaneStatusInfo, BorderLayout.CENTER);
+        labelStatusInfo = new JLabel();
+        Font labelStatusInfoFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, labelStatusInfo.getFont());
+        if (labelStatusInfoFont != null) labelStatusInfo.setFont(labelStatusInfoFont);
+        this.$$$loadLabelText$$$(labelStatusInfo, ResourceBundle.getBundle("myProp").getString("ui.statusInfo"));
+        statusTab.add(labelStatusInfo, BorderLayout.NORTH);
+        defaultTab = new JPanel();
+        defaultTab.setLayout(new GridBagLayout());
+        tabbedPane1.addTab(ResourceBundle.getBundle("myProp").getString("ui.system"), defaultTab);
         final JPanel spacer3 = new JPanel();
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        statusTab.add(spacer3, gbc);
-        final JPanel spacer4 = new JPanel();
+        gbc.gridy = 2;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.VERTICAL;
+        defaultTab.add(spacer3, gbc);
+        buttonDefault = new JButton();
+        Font buttonDefaultFont = this.$$$getFont$$$("Microsoft JhengHei UI", Font.BOLD, 36, buttonDefault.getFont());
+        if (buttonDefaultFont != null) buttonDefault.setFont(buttonDefaultFont);
+        this.$$$loadButtonText$$$(buttonDefault, ResourceBundle.getBundle("myProp").getString("ui.reset"));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        defaultTab.add(buttonDefault, gbc);
+        lableDefault = new JLabel();
+        Font lableDefaultFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 36, lableDefault.getFont());
+        if (lableDefaultFont != null) lableDefault.setFont(lableDefaultFont);
+        this.$$$loadLabelText$$$(lableDefault, ResourceBundle.getBundle("myProp").getString("ui.defalut"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.VERTICAL;
-        statusTab.add(spacer4, gbc);
-        labelSettingsResult = new JLabel();
-        Font labelSettingsResultFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 28, labelSettingsResult.getFont());
-        if (labelSettingsResultFont != null) labelSettingsResult.setFont(labelSettingsResultFont);
-        labelSettingsResult.setText("");
-        gbc = new GridBagConstraints();
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        statusTab.add(labelSettingsResult, gbc);
-        labelSettings = new JLabel();
-        Font labelSettingsFont = this.$$$getFont$$$("Microsoft YaHei UI", Font.BOLD, 28, labelSettings.getFont());
-        if (labelSettingsFont != null) labelSettings.setFont(labelSettingsFont);
-        this.$$$loadLabelText$$$(labelSettings, ResourceBundle.getBundle("myProp").getString("ui.deviceStatus"));
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
         gbc.weightx = 0.3;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
-        statusTab.add(labelSettings, gbc);
+        defaultTab.add(lableDefault, gbc);
+        final JPanel spacer4 = new JPanel();
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        defaultTab.add(spacer4, gbc);
     }
 
     /**
@@ -716,12 +777,113 @@ public class helloform implements ICallBack {
         }
     }
 
+    private static void showMacAddr() {
+        Enumeration<NetworkInterface>e= null;
+        try {
+            e = NetworkInterface.getNetworkInterfaces();
+            while(e.hasMoreElements())
+
+            {
+                String macStr = "";
+                NetworkInterface ni=e.nextElement();
+
+                System.out.println("displayname: "+ni.getDisplayName());
+
+                System.out.println("name: "+ni.getName());
+
+                System.out.println("MTU: "+ni.getMTU());
+
+                System.out.println("Loopback: "+ni.isLoopback());
+
+                System.out.println("Virtual: "+ni.isVirtual());
+
+                System.out.println("Up: "+ni.isUp());
+
+                System.out.println("PointToPoint: "+ni.isPointToPoint());
+
+                byte[]mac=ni.getHardwareAddress();
+
+                if(mac!=null) {
+                    for (int i = 0; i < mac.length; i++) {
+                        int temp = mac[i] & 0xff;
+                        String str = Integer.toHexString(temp);
+                        if (str.length() == 1) {
+                            str = "0" + str;
+                        }
+                        macStr += str.toUpperCase();
+                    }
+                    System.out.println("mac is " + macStr);
+                }else System.out.println("mac is null");
+
+                System.out.println("-----");
+
+            }
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    private static String getMacAddr() {
+        String macStr = "";
+        try {
+            byte[] macAddr = NetworkInterface.getByName("eth0").getHardwareAddress();
+            if (macAddr == null) {
+                macAddr = NetworkInterface.getByName("eth1").getHardwareAddress();
+            }
+
+            for (int i = 0; i < macAddr.length; i++) {
+                int temp = macAddr[i] & 0xff;
+                String str = Integer.toHexString(temp);
+                if (str.length() == 1) {
+                    str = "0" + str;
+                }
+                macStr += str.toUpperCase();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return macStr;
+    }
+
+    private static boolean checkActiveKey(String key) {
+        String path = ACTIVE_KEY_PATH_UNIX;
+        if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
+            path = ACTIVE_KEY_PATH_WIN;
+        }
+        try {
+            BigInteger sha = null;
+            File file = new File(path);
+            String text = FileUtils.readFileToString(file, "utf8");
+            BitLinkInfo info = JSON.parseObject(text, BitLinkInfo.class);
+            key = key + info.getKey();
+//            System.out.println("=======加密前的数据:" + key);
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA");
+            messageDigest.update(key.getBytes());
+            sha = new BigInteger(messageDigest.digest());
+//            System.out.println("SHA加密后:" + sha.toString(32));
+            if (info.getCode().equals(sha.toString(32))) {
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        LogHelper.error("设备激活失败");
+        return false;
+    }
+
     public static void main(String[] args) {
 
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
                 LogHelper.info("程序启动，版本：" + SOFT_VER);
+
+//                showMacAddr();
+                //检查激活码
+                if (!checkActiveKey(getMacAddr())) {
+                    return;
+                }
+
                 JFrame frame = new JFrame("车量监控终端");
                 ImageIcon icon = new ImageIcon(this.getClass().getResource("/image/car.png"));
                 frame.setIconImage(icon.getImage());
@@ -735,15 +897,18 @@ public class helloform implements ICallBack {
         });
     }
 
-    static private final String SOFT_VER = "V1.0(d)";
+    static private final String SOFT_VER = "V1.1(a)";
     static private final String IP_PATTERN = "^(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])$";
     static private final String PORT_PATTERN = "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5])$";
     static private final String PHONE_PATTERN = "^1(3|4|5|7|8)\\d{9}$";
+    private static final String ACTIVE_KEY_PATH_WIN = "bitlink.json";
+    private static final String ACTIVE_KEY_PATH_UNIX = "/etc/bitlink.json";
     static private Connector connector;
     private ResourceBundle resourceBundle;
     private Timer timer;
     private EchoClient echoClient;
     private java.util.Timer oneTimeTimer;
+    private LinkedList<String> statusInfoList;
 
     private JPanel topPanel;
     private JTabbedPane tabbedPane1;
@@ -773,8 +938,12 @@ public class helloform implements ICallBack {
     private JButton buttonCloudSave;
     private JLabel labelCloudPhone;
     private JTextField textFieldCloudPhone;
-    private JLabel labelSettings;
     private JLabel labelSettingsResult;
+    private JPanel defaultTab;
+    private JButton buttonDefault;
+    private JLabel lableDefault;
+    private JLabel labelStatusInfo;
+    private JTextPane textpaneStatusInfo;
     private JTextField textFieldStatus;
 
 }

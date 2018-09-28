@@ -1,7 +1,7 @@
 package com.bitselink.Client;
 
 public enum CloudState {
-    NO_CONNECT("msg.noConnection", 1), NO_REGISTERED("msg.noRegistered", 2), CONNECTED("msg.connectSuccess", 3), CONNECT_FAIL("msg.connectFault", 4);
+    NO_CONNECT("msg.noConnection", 1), NO_REGISTERED("msg.noRegistered", 2), CONNECTED("msg.connectSuccess", 3), CONNECT_FAIL("msg.connectFault", 4), REGISTER_FAIL("msg.registerFault", 5);
     // 成员变量
     private String name;
     private int index;

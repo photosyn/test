@@ -43,10 +43,10 @@
         select '0' as inouttype,#{devNo} as devno,ID,CPH as plateno,InTime as inoutdtime from dbo.MYCARCOMERECORD
         <where>
             <if test="timeFrom != null and timeTo != null">
-                InTime &gt; #{timeFrom} and InTime &lt;= #{timeTo} AND InGateName IS NOT NULL AND InGateName != '' AND CPH != ''
+                InTime &gt; #{timeFrom} and InTime &lt;= #{timeTo} AND InOperatorCard IS NOT NULL AND InOperatorCard != '' AND CPH != ''
             </if>
             <if test="recordId != null">
-                ID &gt; #{recordId} AND InGateName IS NOT NULL AND InGateName != '' AND CPH != ''
+                ID &gt; #{recordId} AND InOperatorCard IS NOT NULL AND InOperatorCard != '' AND CPH != ''
             </if>
         </where>
     </select>
@@ -54,22 +54,33 @@
         select '0' as inouttype,#{devNo} as devno,ID,CPH as plateno,InTime as inoutdtime from dbo.MYCARGOOUTRECORD
         <where>
             <if test="timeFrom != null and timeTo != null">
-                InTime &gt; #{timeFrom} and InTime &lt;= #{timeTo} AND InGateName IS NOT NULL AND InGateName != '' AND CPH != ''
+                InTime &gt; #{timeFrom} and InTime &lt;= #{timeTo} AND InOperatorCard IS NOT NULL AND InOperatorCard != '' AND CPH != ''
             </if>
             <if test="recordId != null">
-                ID &gt; #{recordId} AND InGateName IS NOT NULL AND InGateName != '' AND CPH != ''
+                ID &gt; #{recordId} AND InOperatorCard IS NOT NULL AND InOperatorCard != '' AND CPH != ''
             </if>
         </where>
     </select>
     <!--<select id="selectCarOutByCondition" parameterType="map" resultType="map" databaseId="sqlserver">-->
+    <select id="outDataInComeTable" parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">
+        select '1' as inouttype,#{devNo} as devno,ID,CPH as plateno,OutTime as inoutdtime from dbo.MYCARCOMERECORD
+        <where>
+            <if test="timeFrom != null and timeTo != null">
+                OutTime &gt; #{timeFrom} and OutTime &lt;= #{timeTo} AND OutOperatorCard IS NOT NULL AND OutOperatorCard != '' AND CPH != ''
+            </if>
+            <if test="recordId != null">
+                ID &gt; #{recordId} AND OutOperatorCard IS NOT NULL AND OutOperatorCard != '' AND CPH != ''
+            </if>
+        </where>
+    </select>
     <select id="outDataInOutTable" parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">
         select '1' as inouttype,#{devNo} as devno,ID,CPH as plateno,OutTime as inoutdtime from dbo.MYCARGOOUTRECORD
         <where>
             <if test="timeFrom != null and timeTo != null">
-                OutTime &gt; #{timeFrom} and OutTime &lt;= #{timeTo} AND OutGateName IS NOT NULL AND OutGateName != '' AND CPH != ''
+                OutTime &gt; #{timeFrom} and OutTime &lt;= #{timeTo} AND OutOperatorCard IS NOT NULL AND OutOperatorCard != '' AND CPH != ''
             </if>
             <if test="recordId != null">
-                ID &gt; #{recordId} AND OutGateName IS NOT NULL AND OutGateName != '' AND CPH != ''
+                ID &gt; #{recordId} AND OutOperatorCard IS NOT NULL AND OutOperatorCard != '' AND CPH != ''
             </if>
         </where>
     </select>

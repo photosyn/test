@@ -9,7 +9,7 @@ public class SyncParam {
     public long carOutTableId;
 
     public SyncParam() {
-        method = "";
+        method = "id";
         from = "";
         to = "";
         syncDays = 7;

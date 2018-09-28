@@ -4,7 +4,7 @@ public enum MCodeType {
     M_CODE_TYPE_HEART_BEAT("000001"),//心跳
     M_CODE_TYPE_REGESTER("100001"),//注册
     M_CODE_TYPE_PARK_DATA("100002"),//停车数据
-    M_CODE_TYPE_INFO("100003");//异常信息
+    M_CODE_TYPE_DIAGNOSIS("100003");//异常信息
 
     private String msg;
 
