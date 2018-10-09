@@ -1,6 +1,14 @@
 package com.bitselink.Client.Protocol;
 
+import com.bitselink.config.Config;
+import org.apache.commons.codec.digest.DigestUtils;
+
+import java.text.DateFormat;
+import java.util.Date;
+
 public class RespHead {
+    public static final String RESPHEAD_RCODE_OK = "0000";
+
     private String mcode;
     private String mid;
     private String date;
@@ -11,6 +19,21 @@ public class RespHead {
     private String desc;
     private String safeflg;
     private String mac;
+
+    public void generateIdAndTime(){
+        DateFormat d1 = DateFormat.getDateInstance();
+        DateFormat d2 = DateFormat.getTimeInstance();
+        Date now = new Date();
+        String now_date = d1.format(now);
+        String now_time = d2.format(now);
+        setDate(now_date);
+        setTime(now_time);
+        setMid(Config.randomMid());
+        String sourceStr = "mcode='" + getMcode() + "'&mid='" + getMid() + "'&date='" + getDate() + "'&time='" + getTime() +
+                "'&ver='" + getVer() + "'&msgatr='" + getMsgatr() + "'&safeflg='" + getSafeflg() + "'&key='" + "02468ACE13579BDF'";
+        String md5Str = DigestUtils.md5Hex(sourceStr);
+        setMac(md5Str);
+    }
 
     public String getMcode() {
         return mcode;

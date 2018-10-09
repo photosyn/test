@@ -778,32 +778,30 @@ public class helloform implements ICallBack {
     }
 
     private static void showMacAddr() {
-        Enumeration<NetworkInterface>e= null;
+        Enumeration<NetworkInterface> e = null;
         try {
             e = NetworkInterface.getNetworkInterfaces();
-            while(e.hasMoreElements())
-
-            {
+            while (e.hasMoreElements()) {
                 String macStr = "";
-                NetworkInterface ni=e.nextElement();
+                NetworkInterface ni = e.nextElement();
 
-                System.out.println("displayname: "+ni.getDisplayName());
+                System.out.println("displayname: " + ni.getDisplayName());
 
-                System.out.println("name: "+ni.getName());
+                System.out.println("name: " + ni.getName());
 
-                System.out.println("MTU: "+ni.getMTU());
+                System.out.println("MTU: " + ni.getMTU());
 
-                System.out.println("Loopback: "+ni.isLoopback());
+                System.out.println("Loopback: " + ni.isLoopback());
 
-                System.out.println("Virtual: "+ni.isVirtual());
+                System.out.println("Virtual: " + ni.isVirtual());
 
-                System.out.println("Up: "+ni.isUp());
+                System.out.println("Up: " + ni.isUp());
 
-                System.out.println("PointToPoint: "+ni.isPointToPoint());
+                System.out.println("PointToPoint: " + ni.isPointToPoint());
 
-                byte[]mac=ni.getHardwareAddress();
+                byte[] mac = ni.getHardwareAddress();
 
-                if(mac!=null) {
+                if (mac != null) {
                     for (int i = 0; i < mac.length; i++) {
                         int temp = mac[i] & 0xff;
                         String str = Integer.toHexString(temp);
@@ -813,7 +811,7 @@ public class helloform implements ICallBack {
                         macStr += str.toUpperCase();
                     }
                     System.out.println("mac is " + macStr);
-                }else System.out.println("mac is null");
+                } else System.out.println("mac is null");
 
                 System.out.println("-----");
 
@@ -845,24 +843,66 @@ public class helloform implements ICallBack {
         return macStr;
     }
 
-    private static boolean checkActiveKey(String key) {
+    public static String getUnixMACAddress() {
+        String mac = "";
+        BufferedReader bufferedReader = null;
+        Process process = null;
+        try {
+            process = Runtime.getRuntime().exec("ifconfig eth0");
+            bufferedReader = new BufferedReader(new InputStreamReader(
+                    process.getInputStream()));
+            String line = null;
+            int index = -1;
+            while ((line = bufferedReader.readLine()) != null) {
+                index = line.toLowerCase().indexOf("ether");
+                if (index >= 0) {
+                    mac = line.substring(index + "ether".length() + 1).trim();
+                    String[] strArray = mac.split(" ");
+                    mac = strArray[0].trim();
+                    break;
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                bufferedReader = null;
+                process = null;
+            }
+        }
+        return mac;
+    }
+
+    private static boolean checkActiveKey() {
+        String mac = "";
         String path = ACTIVE_KEY_PATH_UNIX;
         if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
             path = ACTIVE_KEY_PATH_WIN;
+            mac = getMacAddr();
+        } else {
+            mac = getUnixMACAddress();
         }
         try {
-            BigInteger sha = null;
-            File file = new File(path);
-            String text = FileUtils.readFileToString(file, "utf8");
-            BitLinkInfo info = JSON.parseObject(text, BitLinkInfo.class);
-            key = key + info.getKey();
+            File file = new File(path + CONFIG_FILE_NAME);
+            if (file.exists()) {
+                BigInteger sha = null;
+                String text = FileUtils.readFileToString(file, "utf8");
+                BitLinkInfo info = JSON.parseObject(text, BitLinkInfo.class);
+                mac = mac + info.getKey();
 //            System.out.println("=======加密前的数据:" + key);
-            MessageDigest messageDigest = MessageDigest.getInstance("SHA");
-            messageDigest.update(key.getBytes());
-            sha = new BigInteger(messageDigest.digest());
+                MessageDigest messageDigest = MessageDigest.getInstance("SHA");
+                messageDigest.update(mac.getBytes());
+                sha = new BigInteger(messageDigest.digest());
 //            System.out.println("SHA加密后:" + sha.toString(32));
-            if (info.getCode().equals(sha.toString(32))) {
-                return true;
+                if (info.getCode().equals(sha.toString(32))) {
+                    return true;
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -880,7 +920,7 @@ public class helloform implements ICallBack {
 
 //                showMacAddr();
                 //检查激活码
-                if (!checkActiveKey(getMacAddr())) {
+                if (!checkActiveKey()) {
                     return;
                 }
 
@@ -897,12 +937,13 @@ public class helloform implements ICallBack {
         });
     }
 
-    static private final String SOFT_VER = "V1.1(a)";
+    static public final String SOFT_VER = "V1.1(a)";
     static private final String IP_PATTERN = "^(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])$";
     static private final String PORT_PATTERN = "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5])$";
     static private final String PHONE_PATTERN = "^1(3|4|5|7|8)\\d{9}$";
-    private static final String ACTIVE_KEY_PATH_WIN = "bitlink.json";
-    private static final String ACTIVE_KEY_PATH_UNIX = "/etc/bitlink.json";
+    private static final String CONFIG_FILE_NAME = "bitlink.json";
+    private static final String ACTIVE_KEY_PATH_WIN = "";
+    private static final String ACTIVE_KEY_PATH_UNIX = "/home/pi/data/";
     static private Connector connector;
     private ResourceBundle resourceBundle;
     private Timer timer;

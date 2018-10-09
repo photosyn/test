@@ -5,6 +5,7 @@ import com.bitselink.ICallBack;
 import com.bitselink.LogHelper;
 import com.bitselink.config.Config;
 import com.bitselink.domain.ParkingGroupData;
+import com.bitselink.helloform;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -19,7 +20,9 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 
+import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -33,10 +36,61 @@ public class EchoClient {
     private RegisterData registerData;
     private HeartbeatData heartbeatData;
     private List<DiagnosisData> diagnosisHistory;
+    private VersionData versionData;
+    private UpgradeData upgradeData;
+    private UploadConfigData uploadConfigData;
+    private EmptyData downloadConfigData;
 
     public EchoClient(ICallBack obj){
         this.callBackObject = obj;
         encoder = new BitLinkEncoder();
+
+        versionData = new VersionData();
+        RespHead versionHead = new RespHead();
+        versionHead.setMcode(MCodeType.M_CODE_TYPE_VER_INFO.getMsg());
+        versionHead.setVer(MsgHead.VER);
+        versionHead.setMsgatr(MsgHead.HEAD_PC_RESPOND);
+        versionHead.setSafeflg(MsgHead.SAFEFLAG_ALL);
+        versionHead.setRcode(RespHead.RESPHEAD_RCODE_OK);
+        VersionBody versionBody = new VersionBody();
+        versionBody.setAppver(helloform.SOFT_VER);
+        versionData.getHead().add(versionHead);
+        versionData.getBody().add(versionBody);
+
+        upgradeData = new UpgradeData();
+        RespHead upgradeHead = new RespHead();
+        upgradeHead.setMcode(MCodeType.M_CODE_TYPE_UPGRADE.getMsg());
+        upgradeHead.setVer(MsgHead.VER);
+        upgradeHead.setMsgatr(MsgHead.HEAD_PC_RESPOND);
+        upgradeHead.setSafeflg(MsgHead.SAFEFLAG_ALL);
+        upgradeHead.setRcode(RespHead.RESPHEAD_RCODE_OK);
+        UpgradeBody upgradeBody = new UpgradeBody();
+//        upgradeBody.setAppver(helloform.SOFT_VER);
+        upgradeData.getHead().add(upgradeHead);
+        upgradeData.getBody().add(upgradeBody);
+
+        uploadConfigData = new UploadConfigData();
+        RespHead uploadConfigHead = new RespHead();
+        uploadConfigHead.setMcode(MCodeType.M_CODE_TYPE_UPLOAD_CONFIG.getMsg());
+        uploadConfigHead.setVer(MsgHead.VER);
+        uploadConfigHead.setMsgatr(MsgHead.HEAD_PC_RESPOND);
+        uploadConfigHead.setSafeflg(MsgHead.SAFEFLAG_ALL);
+        uploadConfigHead.setRcode(RespHead.RESPHEAD_RCODE_OK);
+        UploadConfigBody uploadConfigBody = new UploadConfigBody();
+        uploadConfigData.getHead().add(uploadConfigHead);
+        uploadConfigData.getBody().add(uploadConfigBody);
+
+        downloadConfigData = new EmptyData();
+        RespHead downloadConfigHead = new RespHead();
+        downloadConfigHead.setMcode(MCodeType.M_CODE_TYPE_DOWNLOAD_CONFIG.getMsg());
+        downloadConfigHead.setVer(MsgHead.VER);
+        downloadConfigHead.setMsgatr(MsgHead.HEAD_PC_RESPOND);
+        downloadConfigHead.setSafeflg(MsgHead.SAFEFLAG_ALL);
+        downloadConfigHead.setRcode(RespHead.RESPHEAD_RCODE_OK);
+        EmptyBody downloadConfigBody = new EmptyBody();
+        downloadConfigData.getHead().add(downloadConfigHead);
+        downloadConfigData.getBody().add(downloadConfigBody);
+
 
         registerData = new RegisterData();
         MsgHead registerHead = new MsgHead();
@@ -131,6 +185,57 @@ public class EchoClient {
         }
     }
 
+    public void sendVersionData(){
+        if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
+            versionData.getHead().get(0).generateIdAndTime();
+            String sendStr = encoder.encode(versionData);
+            channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+        }
+    }
+
+    public void sendUpgradeData(String filename, int position, String version, int retcode){
+        if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
+            upgradeData.getBody().get(0).setFile(filename);
+            upgradeData.getBody().get(0).setStart(position);
+            upgradeData.getBody().get(0).setRetcode(retcode);
+            upgradeData.getBody().get(0).setVersion(version);
+            upgradeData.getBody().get(0).setDevno(Config.rootConfig.register);
+            String sendStr = encoder.encode(upgradeData);
+            channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+        }
+    }
+
+    public void sendConfigData(){
+        if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
+            uploadConfigData.getBody().get(0).setFile("sites.conf.json");
+            try {
+                BufferedInputStream bis = new BufferedInputStream(new FileInputStream("sites.conf.json"));
+                int length = bis.available();
+                uploadConfigData.getBody().get(0).setFilesize(length);
+                byte[] b = new byte[length];
+                bis.read(b);
+                System.out.println(Arrays.toString(b));//得到的是字节
+                System.out.println(new String(b));//可以得到中文
+                bis.close();//关闭流(关闭bis就可以了)
+                uploadConfigData.getBody().get(0).setStream(Arrays.toString(b));
+            } catch (FileNotFoundException e) {
+                LogHelper.warn("找不到文件：" + e.getMessage());
+            } catch (IOException e) {
+                LogHelper.warn("IO操作异常：" + e.getMessage());
+            }
+//            uploadConfigData.getBody().get(0).setFilesize();
+            String sendStr = encoder.encode(uploadConfigData);
+            channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+        }
+    }
+
+    public void sendConfigDownloadResult(){
+        if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
+            String sendStr = encoder.encode(downloadConfigData);
+            channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
+        }
+    }
+
     public void start(){
         try{
             bootstrap = new Bootstrap();
@@ -169,12 +274,10 @@ public class EchoClient {
             public void operationComplete(ChannelFuture futureListener) throws Exception {
                 if (futureListener.isSuccess()){
                     channel = futureListener.channel();
+                    LogHelper.warn("中心服务器：" + channel.remoteAddress() + "连接成功");
                     if (Config.rootConfig.register.isEmpty()) {
                         callBackObject.setCloudState(CloudState.NO_REGISTERED,"");
-                        LogHelper.warn("中心服务器：" + channel.remoteAddress() + "连接成功，设备未注册");
-                    } else {
-                        callBackObject.setCloudState(CloudState.CONNECTED, "");
-                        LogHelper.info("中心服务器：" + channel.remoteAddress() + "连接成功，设备已注册");
+                        LogHelper.warn("设备未注册");
                     }
                 } else {
                     callBackObject.setCloudState(CloudState.CONNECT_FAIL, "");

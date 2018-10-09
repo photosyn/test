@@ -10,6 +10,7 @@ public class MsgHead {
     public static final String VER = "0001";
     public static final String HEAD_HEART = "99";
     public static final String HEAD_REQUEST = "20";
+    public static final String HEAD_PC_RESPOND = "31";
     public static final String SAFEFLAG_ALL = "11";
 
     private String mcode;

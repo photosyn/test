@@ -13,7 +13,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.Base64;
 
 public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
@@ -64,7 +64,9 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 //        ctx.writeAndFlush(Unpooled.copiedBuffer("Netty rocks!\r\n", CharsetUtil.UTF_8));
-        LogHelper.info("通信信道：" + ctx.channel().remoteAddress() + "激活");
+        Config.syncParamUpdate(true);
+        client.callBackObject.setCloudState(CloudState.CONNECTED,"");
+        LogHelper.info("中心服务器：" + ctx.channel().remoteAddress() + "连接成功");
         client.sendRegisterData(ctx.channel());
         heartTimeoutCnt = 1;
     }
@@ -110,6 +112,100 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         }
                         break;
                     }
+                    case M_CODE_TYPE_VER_INFO:
+                    {
+                        client.sendVersionData();
+                        break;
+                    }
+                    case M_CODE_TYPE_UPGRADE:
+                    {
+                        boolean exceptionHappened = false;
+                        String filename = "";
+                        String version = "";
+                        try {
+                            RespUpgradeBody respUpgradeBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespUpgradeBody.class);
+                            int cmdtype = respUpgradeBody.getCmdtype();
+                            int cancel = respUpgradeBody.getRetcancel();
+                            filename = respUpgradeBody.getFile();
+                            int filesize = respUpgradeBody.getFilesize();
+                            version = respUpgradeBody.getVersion();
+                            String filepath = filename + "_" + version + "_" + filesize + ".tmp";
+                            if(cancel == 0) {
+                                if(cmdtype == 0) {
+                                    LogHelper.info("启动设备升级，升级包：" + filename + "_" + version + "_" + filesize);
+                                    File file = new File(filepath);
+                                    int startindex = 0;
+                                    if (file.exists()) {
+                                        startindex = (int)file.length();
+                                    }
+                                    client.sendUpgradeData(filename, startindex, version, 0);
+                                } else {
+                                    int blocksize = respUpgradeBody.getBlocksize();
+                                    String stream = respUpgradeBody.getStream();
+                                    LogHelper.info("设备升级中，blocksize：" + blocksize);
+                                    File file = new File(filepath);
+                                    int startindex = 0;
+                                    if (file.exists()) {
+                                        startindex = (int)file.length();
+                                    }
+                                    RandomAccessFile access = new RandomAccessFile(file,"rw");
+                                    access.seek(startindex);
+                                    access.write(stream.getBytes());
+                                    int writeindex = (int)file.length();
+                                    if (writeindex >= filesize) {
+                                        file.renameTo(new File("upgrade.jar"));
+                                    }
+                                    client.sendUpgradeData(filename, writeindex, version, 0);
+                                }
+                            }
+                        } catch (JSONException e) {
+                            LogHelper.warn("客户端转换升级body数据失败：" + e.getMessage());
+                            exceptionHappened = true;
+                        } catch (FileNotFoundException e) {
+                            LogHelper.warn("文件不存在：" + e.getMessage());
+                            exceptionHappened = true;
+                        } catch (IOException e) {
+                            LogHelper.warn("文件定位失败：" + e.getMessage());
+                            exceptionHappened = true;
+                        }
+                        if (exceptionHappened) {
+                            client.sendUpgradeData(filename, 0, version, 1);
+                        }
+                        break;
+                    }
+                    case M_CODE_TYPE_UPLOAD_CONFIG:
+                    {
+                        client.sendConfigData();
+                        break;
+                    }
+                    case M_CODE_TYPE_DOWNLOAD_CONFIG:
+                    {
+                        RespDownloadConfigBody respDownloadConfigBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespDownloadConfigBody.class);
+                        String stream = respDownloadConfigBody.getStream();
+                        try {
+                            FileWriter fw = new FileWriter("sites.conf.json");
+                            fw.write(stream);
+                            fw.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        client.sendConfigDownloadResult();
+                        break;
+                    }
+                    case M_CODE_TYPE_RESTART:
+                    {
+                        Runtime.getRuntime().addShutdownHook(new Thread() {
+                            public void run() {
+                                try {
+                                    Runtime.getRuntime().exec("sh restart.sh");
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                        System.exit(0);
+                        break;
+                    }
                     case M_CODE_TYPE_REGESTER:
                     {
                         if(respHead.getRcode().equals("0000"))
@@ -121,7 +217,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                                 RespRegisterBody respRegisterBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespRegisterBody.class);
                                 Config.rootConfig.register = respRegisterBody.getDevno();
                                 Config.save();
-                                client.callBackObject.setCloudState(CloudState.CONNECTED,"");
+                                LogHelper.info("设备注册成功");
                             } catch (JSONException e) {
                                 LogHelper.warn("客户端转换注册body数据失败：" + e.getMessage());
                             }
@@ -170,8 +266,11 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        LogHelper.info(cause.getLocalizedMessage());
+        LogHelper.info(cause.getStackTrace().toString());
         LogHelper.info("连接异常，关闭连接：" + cause.getMessage());
-        ctx.close();
+        //ctx.close();
     }
 
     @Override

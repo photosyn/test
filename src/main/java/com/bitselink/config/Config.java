@@ -69,7 +69,7 @@ public class Config {
             String text = FileUtils.readFileToString(file, "utf8");
             rootConfig = JSON.parseObject(text, Root.class);
             repair();
-            syncParamUpdate(true);
+            //syncParamUpdate(true);
         } catch (IOException e) {
             LogHelper.error("配置文件缺失：" + e.getMessage() + "重新创建配置文件");
             return false;
@@ -146,8 +146,7 @@ public class Config {
     }
 
     private static boolean huichiParamUpdate(boolean firstTime) {
-        if (!firstTime)
-        {
+        if (!firstTime) {
             rootConfig.huichiParam.from = rootConfig.huichiParam.to;
             getNextSyncTime(rootConfig.huichiParam.from, 5);
             rootConfig.huichiParam.to = syncResult.syncTime;
