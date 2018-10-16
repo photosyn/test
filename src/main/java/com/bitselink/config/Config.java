@@ -77,6 +77,44 @@ public class Config {
         return true;
     }
 
+    public static boolean check(Root root) {
+        if (null == root) {
+            return false;
+        }
+        if (null == root.site || !root.site.check()) {
+            return false;
+        }
+        if (null == root.cloud || !root.cloud.check()) {
+            return false;
+        }
+        if (null == root.register) {
+            return false;
+        }
+        if (null == root.databaseType) {
+            return false;
+        }
+        if (root.databaseType.isEmpty()) {
+            return false;
+        }
+
+        switch (root.databaseType) {
+            case "huichi": {
+                if (null == root.huichiParam || !root.huichiParam.check()) {
+                    return false;
+                }
+                break;
+            }
+            default: {
+                if (null == root.syncParam && !root.syncParam.check()) {
+                    return false;
+                }
+                break;
+            }
+        }
+
+        return true;
+    }
+
     public static boolean repair() {
         if (null == rootConfig) {
             rootConfig = new Root();

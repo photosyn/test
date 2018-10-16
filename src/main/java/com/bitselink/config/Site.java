@@ -17,6 +17,28 @@ public class Site {
         dbName = "";
     }
 
+    public boolean check() {
+        if(dbType.isEmpty()) {
+            return false;
+        }
+        if(ip.isEmpty()) {
+            return false;
+        }
+        if(port.isEmpty()) {
+            return false;
+        }
+        if(user.isEmpty()) {
+            return false;
+        }
+        if(password.isEmpty()) {
+            return false;
+        }
+        if(dbName.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
     public String getDbType() {
         return dbType;
     }

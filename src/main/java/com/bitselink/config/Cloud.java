@@ -11,6 +11,19 @@ public class Cloud {
         phone = "";
     }
 
+    public boolean check() {
+        if(ip.isEmpty()) {
+            return false;
+        }
+        if(port.isEmpty()) {
+            return false;
+        }
+        if(phone.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
     public String getIp() {
         return ip;
     }

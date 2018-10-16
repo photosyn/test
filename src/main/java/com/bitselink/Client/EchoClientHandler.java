@@ -5,16 +5,18 @@ import com.alibaba.fastjson.JSONException;
 import com.bitselink.Client.Protocol.*;
 import com.bitselink.LogHelper;
 import com.bitselink.config.Config;
+import com.bitselink.config.Root;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
-import java.util.Base64;
+import org.apache.commons.codec.binary.Base64;
 
 public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private EchoClient client;
@@ -82,13 +84,14 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 leftStr = leftStr.substring(8+frameLen);
                 leftStr = StringUtils.substringAfter(leftStr, "#$D#$A");
                 String json = null;
-                try {
-                    json = new String(Base64.getDecoder().decode(encodeStr),"utf-8");
-                    LogHelper.info("客户端接收数据:" + json);
-                } catch (UnsupportedEncodingException e) {
-                    LogHelper.warn("客户端接收数据decode失败：" + e.getMessage());
-                    return;
-                }
+                json = new String(Base64.decodeBase64(encodeStr));
+//                try {
+//                    json = new String(Base64.getDecoder().decode(encodeStr),"utf-8");
+//                    LogHelper.info("客户端接收数据:" + json);
+//                } catch (UnsupportedEncodingException e) {
+//                    LogHelper.warn("客户端接收数据decode失败：" + e.getMessage());
+//                    return;
+//                }
 
                 RespHead respHead = null;
                 try {
@@ -142,6 +145,9 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                                 } else {
                                     int blocksize = respUpgradeBody.getBlocksize();
                                     String stream = respUpgradeBody.getStream();
+                                    String decodeStream = "";
+                                    byte[] b = Base64.decodeBase64(stream);
+
                                     LogHelper.info("设备升级中，blocksize：" + blocksize);
                                     File file = new File(filepath);
                                     int startindex = 0;
@@ -150,12 +156,15 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                                     }
                                     RandomAccessFile access = new RandomAccessFile(file,"rw");
                                     access.seek(startindex);
-                                    access.write(stream.getBytes());
+                                    access.write(b);
+                                    access.close();
                                     int writeindex = (int)file.length();
                                     if (writeindex >= filesize) {
                                         file.renameTo(new File("upgrade.jar"));
+                                        client.sendUpgradeData(filename, writeindex, version, 2);
+                                    } else {
+                                        client.sendUpgradeData(filename, writeindex, version, 0);
                                     }
-                                    client.sendUpgradeData(filename, writeindex, version, 0);
                                 }
                             }
                         } catch (JSONException e) {
@@ -181,15 +190,46 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     case M_CODE_TYPE_DOWNLOAD_CONFIG:
                     {
                         RespDownloadConfigBody respDownloadConfigBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespDownloadConfigBody.class);
-                        String stream = respDownloadConfigBody.getStream();
+                        String config = respDownloadConfigBody.getConfig();
+                        Root root = null;
+                        String info = "";
+                        int retcode = 0;
                         try {
-                            FileWriter fw = new FileWriter("sites.conf.json");
-                            fw.write(stream);
-                            fw.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                            root = JSON.parseObject(config, Root.class);
+                        } catch (Exception e1) {
+                            info = "下载的配置文件格式错误";
+                            client.sendConfigDownloadResult(1, info);
+                            client.addDiagnosisData(info, DiagnosisBody.HIGH_LEVEL);
+                            client.sendDiagnosisData();
+                            break;
                         }
-                        client.sendConfigDownloadResult();
+                        if(Config.check(root)) {
+                            try {
+                                File file = new File("sites.conf.json");
+                                FileUtils.writeStringToFile(file, config,"utf8");
+                            } catch (IOException e2) {
+                                retcode = 1;
+                                info = "下载的配置文件保存失败";
+                                LogHelper.error(info);
+                                client.addDiagnosisData(info, DiagnosisBody.HIGH_LEVEL);
+                            }
+                            if(!Config.read()) {
+                                retcode = 1;
+                                info = "下载的配置文件同步更新失败";
+                                LogHelper.error(info);
+                                client.addDiagnosisData(info, DiagnosisBody.HIGH_LEVEL);
+                            }
+
+
+                        } else {
+                            info = "下载的配置文件格式错误";
+                            retcode = 1;
+                            client.addDiagnosisData(info, DiagnosisBody.HIGH_LEVEL);
+                        }
+                        client.sendConfigDownloadResult(retcode, info);
+                        if(retcode > 0) {
+                            client.sendDiagnosisData();
+                        }
                         break;
                     }
                     case M_CODE_TYPE_RESTART:
@@ -197,7 +237,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         Runtime.getRuntime().addShutdownHook(new Thread() {
                             public void run() {
                                 try {
-                                    Runtime.getRuntime().exec("sh restart.sh");
+                                    Runtime.getRuntime().exec("reboot");
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -208,16 +248,17 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     }
                     case M_CODE_TYPE_REGESTER:
                     {
+                        if(heartTimeoutCnt > 0){
+                            heartTimeoutCnt--;
+                        }
                         if(respHead.getRcode().equals("0000"))
                         {
-                            if(heartTimeoutCnt > 0){
-                                heartTimeoutCnt--;
-                            }
                             try {
                                 RespRegisterBody respRegisterBody = JSON.parseObject(json).getJSONArray("body").getJSONObject(0).toJavaObject(RespRegisterBody.class);
                                 Config.rootConfig.register = respRegisterBody.getDevno();
                                 Config.save();
                                 LogHelper.info("设备注册成功");
+                                client.callBackObject.setCloudState(CloudState.REGISTERED,"");
                             } catch (JSONException e) {
                                 LogHelper.warn("客户端转换注册body数据失败：" + e.getMessage());
                             }
@@ -280,4 +321,16 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         client.doConnect();
     }
 
+    public InputStream getStringStream(String sInputString){
+
+    if (sInputString != null && !sInputString.trim().equals("")){
+        try{
+            ByteArrayInputStream tInputStringStream = new ByteArrayInputStream(sInputString.getBytes());
+            return tInputStringStream;
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+    }
+    return null;
+    }
 }

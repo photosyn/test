@@ -17,6 +17,22 @@ public class SyncParam {
         carOutTableId = -1;
     }
 
+    public boolean check(){
+        if(method.isEmpty()) {
+            return false;
+        }
+        if(from.isEmpty()) {
+            return false;
+        }
+        if(to.isEmpty()) {
+            return false;
+        }
+        if(0 > syncDays) {
+            return false;
+        }
+        return true;
+    }
+
     public String getMethod() {
         return method;
     }

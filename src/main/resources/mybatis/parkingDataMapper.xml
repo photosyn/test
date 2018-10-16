@@ -33,7 +33,7 @@
         select 'out' as action,ID,CPH as plateNo,OutTime as time from dbo.MYCARGOOUTRECORD where OutTime between #{timeFrom} and #{timeTo}
     </select>
     <select id="connectTest" resultType="map" databaseId="sqlserver">
-        select top(1)* from MYCARCOMERECORD
+        select top(1)* from dbo.MYCARCOMERECORD
     </select>
     <select id="selectTest"  parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">
         select '0' as inouttype,'2' as devno,ID,CPH as plateno,InTime as inoutdtime from dbo.MYCARCOMERECORD where CONVERT(varchar(19),InTime,120) &gt;= '2018-08-08 10:00:00' and CONVERT(varchar(19),InTime,120) &lt;= '2018-08-10 10:00:00'

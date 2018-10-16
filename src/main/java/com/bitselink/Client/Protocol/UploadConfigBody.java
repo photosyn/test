@@ -1,31 +1,22 @@
 package com.bitselink.Client.Protocol;
 
 public class UploadConfigBody {
-    private int filesize;
-    private String file;
-    private String stream;
+    private String devno;
+    private String config;
 
-    public int getFilesize() {
-        return filesize;
+    public String getDevno() {
+        return devno;
     }
 
-    public void setFilesize(int filesize) {
-        this.filesize = filesize;
+    public void setDevno(String devno) {
+        this.devno = devno;
     }
 
-    public String getFile() {
-        return file;
+    public String getConfig() {
+        return config;
     }
 
-    public void setFile(String file) {
-        this.file = file;
-    }
-
-    public String getStream() {
-        return stream;
-    }
-
-    public void setStream(String stream) {
-        this.stream = stream;
+    public void setConfig(String config) {
+        this.config = config;
     }
 }

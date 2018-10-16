@@ -4,14 +4,13 @@ import javax.swing.*;
 import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.security.MessageDigest;
 import java.sql.*;
 import java.text.DateFormat;
@@ -26,6 +25,7 @@ import com.alibaba.fastjson.JSONException;
 import com.bitselink.Client.CloudState;
 import com.bitselink.Client.EchoClient;
 import com.bitselink.Client.Protocol.DiagnosisBody;
+import com.bitselink.Client.SiteState;
 import com.bitselink.config.*;
 import com.bitselink.connection.Connector;
 import org.apache.commons.io.FileUtils;
@@ -45,22 +45,26 @@ public class helloform implements ICallBack {
                 timer.stop();
             }
             break;
-            case NO_REGISTERED: {
+            case NO_REGISTERED:
+            case REGISTERED: {
             }
             break;
             case REGISTER_FAIL: {
-                labelCloudInfo.setText(resourceBundle.getString(state.getName()));
-                DateFormat d1 = DateFormat.getDateTimeInstance();
-                Date now = new Date();
-                statusInfoList.addFirst("[" + d1.format(now) + "] " + info + "\r\n");
-                if (statusInfoList.size() > 8) {
-                    statusInfoList.removeLast();
-                }
-                String statusInfoTotal = "";
-                for (String statusInfo : statusInfoList) {
-                    statusInfoTotal += statusInfo;
-                }
-                textpaneStatusInfo.setText(statusInfoTotal);
+                addStatusInfo(info);
+            }
+            break;
+        }
+    }
+
+    @Override
+    public void setSiteState(SiteState state, String info) {
+        labelConnectInfo.setText(resourceBundle.getString(state.getName()));
+        switch (state) {
+            case CONNECT_FAIL: {
+                timer.stop();
+                addStatusInfo(info);
+                echoClient.addDiagnosisData(info, DiagnosisBody.HIGH_LEVEL);
+                echoClient.sendDiagnosisData();
             }
             break;
         }
@@ -77,6 +81,20 @@ public class helloform implements ICallBack {
                 }
             }, 0);
         }
+    }
+
+    private void addStatusInfo(String info) {
+        DateFormat d1 = DateFormat.getDateTimeInstance();
+        Date now = new Date();
+        statusInfoList.addFirst("[" + d1.format(now) + "] " + info + "\r\n");
+        if (statusInfoList.size() > 8) {
+            statusInfoList.removeLast();
+        }
+        String statusInfoTotal = "";
+        for (String statusInfo : statusInfoList) {
+            statusInfoTotal += statusInfo;
+        }
+        textpaneStatusInfo.setText(statusInfoTotal);
     }
 
     public helloform() {
@@ -107,8 +125,8 @@ public class helloform implements ICallBack {
         statusInfoList = new LinkedList<String>();
         showConfigData();
         resourceBundle = ResourceBundle.getBundle("myProp", new Locale("zh", "CN"));
-        labelConnectInfo.setText(resourceBundle.getString("msg.noConnection"));
-        connector = new Connector();
+        setSiteState(SiteState.NO_CONNECT, "");
+        connector = new Connector(this);
         LogHelper.info("创建通信客户端");
         echoClient = new EchoClient(this);
         echoClient.start();
@@ -125,7 +143,6 @@ public class helloform implements ICallBack {
                     JOptionPane.showMessageDialog(null, "数据库已连接", "提示", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     doSiteConnect();
-                    //doConnectTest();
                 }
             }
         });
@@ -163,20 +180,36 @@ public class helloform implements ICallBack {
         };
         timer = new Timer(2000, actionListener);
         oneTimeTimer = new java.util.Timer();
+        dbOneTimeTimer = new java.util.Timer();
+        doSiteConnect();
     }
 
     private void checkParkingData() {
-        if (connector.checkParkingData()) {
-            timer.stop();
-            timer.restart();
-            oneTimeTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    checkParkingData();
+        if (connector.isConnected()) {
+            if (!Config.isIsWaitRegister()) {
+                if (connector.checkParkingData()) {
+                    timer.stop();
+                    if (connector.isConnected()) {
+                        timer.restart();
+                        oneTimeTimer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                checkParkingData();
+                            }
+                        }, 0);
+                    } else {
+                        doSiteConnect();
+                    }
+                } else {
+                    echoClient.sendParkingData(connector.getParkingGroupData());
+                    if (!connector.isConnected()) {
+                        doSiteConnect();
+                    }
                 }
-            }, 0);
+            }
         } else {
-            echoClient.sendParkingData(connector.getParkingGroupData());
+            timer.stop();
+            doSiteConnect();
         }
     }
 
@@ -267,15 +300,21 @@ public class helloform implements ICallBack {
         site.dbName = textFieldDbName.getText();
 
         if (connector.connectDbMybatis(site)) {
-            labelConnectInfo.setText(resourceBundle.getString("msg.connectSuccess"));
             saveSiteConfigData();
-            connector.checkParkingData();
-            echoClient.sendParkingData(connector.getParkingGroupData());
+            if (!Config.isIsWaitRegister()) {
+                connector.checkParkingData();
+                echoClient.sendParkingData(connector.getParkingGroupData());
+            }
             timer.start();
         } else {
-            labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
-            echoClient.addDiagnosisData("连接数据库失败", DiagnosisBody.HIGH_LEVEL);
-            echoClient.sendDiagnosisData();
+            LogHelper.warn("数据库连接失败连接失败，60秒后重新尝试");
+            dbOneTimeTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+
+                    doSiteConnect();
+                }
+            }, 60000);
         }
     }
 
@@ -911,7 +950,43 @@ public class helloform implements ICallBack {
         return false;
     }
 
+    // 检查是否获得锁，true:获得锁，说明是第一次执行;false:没有取得锁，说明已经有一个程序在执行
+    public static boolean checkLock() {
+        FileLock lock = null;
+        RandomAccessFile r = null;
+        FileChannel fc = null;
+        try {
+            // 在临时文件夹创建一个临时文件，锁住这个文件用来保证应用程序只有一个实例被创建.
+            File sf = new File("lock.single");
+            sf.createNewFile();
+            r = new RandomAccessFile(sf, "rw");
+            fc = r.getChannel();
+            lock = fc.tryLock();
+            if (lock == null || !lock.isValid()) {
+                // 如果没有得到锁，则程序退出.
+                // 没有必要手动释放锁和关闭流，当程序退出时，他们会被关闭的.
+                return true;
+            }
+            sf.deleteOnExit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static void main(String[] args) {
+        // 检查文件锁，确保只有一个实例运行
+        boolean isLocked = true;
+        for (int i = 0; i < 10; i++) {
+            if (!checkLock()) {
+                isLocked = false;
+                break;
+            }
+        }
+        if (isLocked) {
+            // 退出当前程序
+            System.exit(0);
+        }
 
         EventQueue.invokeLater(new Runnable() {
             @Override
@@ -937,7 +1012,7 @@ public class helloform implements ICallBack {
         });
     }
 
-    static public final String SOFT_VER = "V1.1(a)";
+    static public final String SOFT_VER = "V1.1(b)";
     static private final String IP_PATTERN = "^(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])$";
     static private final String PORT_PATTERN = "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5])$";
     static private final String PHONE_PATTERN = "^1(3|4|5|7|8)\\d{9}$";
@@ -949,6 +1024,7 @@ public class helloform implements ICallBack {
     private Timer timer;
     private EchoClient echoClient;
     private java.util.Timer oneTimeTimer;
+    private java.util.Timer dbOneTimeTimer;
     private LinkedList<String> statusInfoList;
 
     private JPanel topPanel;
