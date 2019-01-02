@@ -5,16 +5,20 @@ public class SyncParam {
     public int syncDays;
     public String from;
     public String to;
-    public long carInTableId;
-    public long carOutTableId;
+    public long inTableInIndex;
+    public long inTableOutIndex;
+    public long outTableInIndex;
+    public long outTableOutIndex;
 
     public SyncParam() {
         method = "id";
         from = "";
         to = "";
         syncDays = 7;
-        carInTableId = -1;
-        carOutTableId = -1;
+        inTableInIndex = -1;
+        inTableOutIndex = -1;
+        outTableInIndex = -1;
+        outTableOutIndex = -1;
     }
 
     public boolean check(){
@@ -65,19 +69,35 @@ public class SyncParam {
         this.to = to;
     }
 
-    public long getCarInTableId() {
-        return carInTableId;
+    public long getInTableInIndex() {
+        return inTableInIndex;
     }
 
-    public void setCarInTableId(long carInTableId) {
-        this.carInTableId = carInTableId;
+    public void setInTableInIndex(long inTableInIndex) {
+        this.inTableInIndex = inTableInIndex;
     }
 
-    public long getCarOutTableId() {
-        return carOutTableId;
+    public long getInTableOutIndex() {
+        return inTableOutIndex;
     }
 
-    public void setCarOutTableId(long carOutTableId) {
-        this.carOutTableId = carOutTableId;
+    public void setInTableOutIndex(long inTableOutIndex) {
+        this.inTableOutIndex = inTableOutIndex;
+    }
+
+    public long getOutTableInIndex() {
+        return outTableInIndex;
+    }
+
+    public void setOutTableInIndex(long outTableInIndex) {
+        this.outTableInIndex = outTableInIndex;
+    }
+
+    public long getOutTableOutIndex() {
+        return outTableOutIndex;
+    }
+
+    public void setOutTableOutIndex(long outTableOutIndex) {
+        this.outTableOutIndex = outTableOutIndex;
     }
 }

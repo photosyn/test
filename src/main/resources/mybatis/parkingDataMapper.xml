@@ -21,24 +21,11 @@
 <!--        <result property="P_DateTime" column="P_DateTime" javaType="java.util.Date" jdbcType="TIMESTAMP"/>-->
     </resultMap>
 
-    <select id="selectParkingData" parameterType="map" resultType="map" databaseId="sqlserver">
-        select 'in' as action,ID,CPH as plateNo,InTime as time from dbo.MYCARCOMERECORD where InTime between #{timeFrom} and #{timeTo}
-        union all
-        select 'out' as action,ID,CPH as plateNo,OutTime as time from dbo.MYCARGOOUTRECORD where OutTime between #{timeFrom} and #{timeTo}
-    </select>
-    <select id="selectCarInTableData" parameterType="map" resultType="map" databaseId="sqlserver">
-        select 'in' as action,ID,CPH as plateNo,InTime as time from dbo.MYCARCOMERECORD where InTime between #{timeFrom} and #{timeTo}
-    </select>
-    <select id="selectCarOutTableData" parameterType="map" resultType="map" databaseId="sqlserver">
-        select 'out' as action,ID,CPH as plateNo,OutTime as time from dbo.MYCARGOOUTRECORD where OutTime between #{timeFrom} and #{timeTo}
-    </select>
     <select id="connectTest" resultType="map" databaseId="sqlserver">
         select top(1)* from dbo.MYCARCOMERECORD
     </select>
-    <select id="selectTest"  parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">
-        select '0' as inouttype,'2' as devno,ID,CPH as plateno,InTime as inoutdtime from dbo.MYCARCOMERECORD where CONVERT(varchar(19),InTime,120) &gt;= '2018-08-08 10:00:00' and CONVERT(varchar(19),InTime,120) &lt;= '2018-08-10 10:00:00'
-    </select>
     <!--<select id="selectCarInByCondition" parameterType="map" resultType="map" databaseId="sqlserver">-->
+    <!--HUICHI-->
     <select id="comeDataInComeTable" parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">
         select '0' as inouttype,#{devNo} as devno,ID,CPH as plateno,InTime as inoutdtime from dbo.MYCARCOMERECORD
         <where>
@@ -81,6 +68,22 @@
             </if>
             <if test="recordId != null">
                 ID &gt; #{recordId} AND OutOperatorCard IS NOT NULL AND OutOperatorCard != '' AND CPH != ''
+            </if>
+        </where>
+    </select>
+
+    <!--BOSINY-->
+    <select id="bosiniTest" resultType="map" databaseId="sqlserver">
+        select top(1)* from dbo.Cpwxii_CardAccLog
+    </select>
+    <select id="recordDataSingleTable" parameterType="map" resultMap="parkingDataMap" databaseId="sqlserver">
+        select Inout_Flag as inouttype,#{devNo} as devno,Log_ID as ID, Vehicle_No as plateno, Acc_DateTime as inoutdtime from dbo.Cpwxii_CardAccLog
+        <where>
+            <if test="timeFrom != null and timeTo != null">
+                Acc_DateTime &gt; #{timeFrom} and Acc_DateTime &lt;= #{timeTo} AND Vehicle_No != ''
+            </if>
+            <if test="recordId != null">
+                Log_ID &gt; #{recordId} AND Vehicle_No != ''
             </if>
         </where>
     </select>

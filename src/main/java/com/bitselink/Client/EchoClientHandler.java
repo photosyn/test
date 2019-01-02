@@ -239,7 +239,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                                 try {
                                     Runtime.getRuntime().exec("reboot");
                                 } catch (IOException e) {
-                                    e.printStackTrace();
+                                    LogHelper.warn("执行reboot异常:" , e);
                                 }
                             }
                         });
@@ -307,10 +307,8 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
-        LogHelper.info(cause.getLocalizedMessage());
-        LogHelper.info(cause.getStackTrace().toString());
-        LogHelper.info("连接异常，关闭连接：" + cause.getMessage());
+        LogHelper.warn("通信异常:" + cause.getMessage());
+        LogHelper.warn("通信异常堆栈:" , cause);
         //ctx.close();
     }
 
@@ -322,15 +320,14 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     public InputStream getStringStream(String sInputString){
-
-    if (sInputString != null && !sInputString.trim().equals("")){
-        try{
-            ByteArrayInputStream tInputStringStream = new ByteArrayInputStream(sInputString.getBytes());
-            return tInputStringStream;
-        }catch (Exception ex){
-            ex.printStackTrace();
+        if (sInputString != null && !sInputString.trim().equals("")){
+            try{
+                ByteArrayInputStream tInputStringStream = new ByteArrayInputStream(sInputString.getBytes());
+                return tInputStringStream;
+            }catch (Exception ex){
+                LogHelper.warn("getStringStream()异常:" , ex);
+            }
         }
-    }
-    return null;
+        return null;
     }
 }

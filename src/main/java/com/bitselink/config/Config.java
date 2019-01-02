@@ -25,7 +25,7 @@ public class Config {
     public static SyncResult syncResult = new Config.SyncResult();
     private static final String CONFIG_PATH = "sites.conf.json";
     public static Root rootConfig;
-    public static HuichiParam huichiParam = new HuichiParam();
+    public static SyncParam syncParam = new SyncParam();
     private static boolean isWaitRegister = false;
     private static boolean isAppError = false;
 
@@ -57,7 +57,7 @@ public class Config {
             }
             return result.toString().toUpperCase();
         } catch (Exception e) {
-            e.printStackTrace();
+            LogHelper.info("randomMid()异常:", e);
         }
         return null;
 
@@ -99,16 +99,13 @@ public class Config {
 
         switch (root.databaseType) {
             case "huichi": {
-                if (null == root.huichiParam || !root.huichiParam.check()) {
+                if (null == root.syncParam || !root.syncParam.check()) {
                     return false;
                 }
                 break;
             }
             default: {
-                if (null == root.syncParam && !root.syncParam.check()) {
-                    return false;
-                }
-                break;
+                return false;
             }
         }
 
@@ -136,12 +133,6 @@ public class Config {
         }
 
         switch (rootConfig.databaseType) {
-            case "huichi": {
-                if (null == rootConfig.huichiParam) {
-                    rootConfig.huichiParam = new HuichiParam();
-                }
-                break;
-            }
             default: {
                 if (null == rootConfig.syncParam) {
                     rootConfig.syncParam = new SyncParam();
@@ -183,43 +174,43 @@ public class Config {
         }
     }
 
-    private static boolean huichiParamUpdate(boolean firstTime) {
+    private static boolean paramUpdate(boolean firstTime) {
         if (!firstTime) {
-            rootConfig.huichiParam.from = rootConfig.huichiParam.to;
-            getNextSyncTime(rootConfig.huichiParam.from, 5);
-            rootConfig.huichiParam.to = syncResult.syncTime;
+            rootConfig.syncParam.from = rootConfig.syncParam.to;
+            getNextSyncTime(rootConfig.syncParam.from, 5);
+            rootConfig.syncParam.to = syncResult.syncTime;
 
-            rootConfig.huichiParam.inTableInIndex = huichiParam.inTableInIndex;
-            rootConfig.huichiParam.inTableOutIndex = huichiParam.inTableOutIndex;
-            rootConfig.huichiParam.outTableInIndex = huichiParam.outTableInIndex;
-            rootConfig.huichiParam.outTableOutIndex = huichiParam.outTableOutIndex;
+            rootConfig.syncParam.inTableInIndex = syncParam.inTableInIndex;
+            rootConfig.syncParam.inTableOutIndex = syncParam.inTableOutIndex;
+            rootConfig.syncParam.outTableInIndex = syncParam.outTableInIndex;
+            rootConfig.syncParam.outTableOutIndex = syncParam.outTableOutIndex;
         } else {
-            if(rootConfig.huichiParam.method.isEmpty()){
-                rootConfig.huichiParam.method = "id";
+            if(rootConfig.syncParam.method.isEmpty()){
+                rootConfig.syncParam.method = "id";
             }
-            if (rootConfig.huichiParam.from.isEmpty()){
+            if (rootConfig.syncParam.from.isEmpty()){
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 LocalDateTime now = LocalDateTime.now();
-                if (0 >= rootConfig.huichiParam.syncDays) {
-                    rootConfig.huichiParam.from = now.minusSeconds(10).format(formatter);
+                if (0 >= rootConfig.syncParam.syncDays) {
+                    rootConfig.syncParam.from = now.minusSeconds(10).format(formatter);
                 } else {
-                    rootConfig.huichiParam.from = now.minusDays(rootConfig.huichiParam.syncDays).format(formatter);
+                    rootConfig.syncParam.from = now.minusDays(rootConfig.syncParam.syncDays).format(formatter);
                 }
-                getNextSyncTime(rootConfig.huichiParam.from, 5);
-                rootConfig.huichiParam.to = syncResult.syncTime;
+                getNextSyncTime(rootConfig.syncParam.from, 5);
+                rootConfig.syncParam.to = syncResult.syncTime;
 
-                rootConfig.huichiParam.inTableInIndex = -1;
-                rootConfig.huichiParam.inTableOutIndex = -1;
-                rootConfig.huichiParam.outTableInIndex = -1;
-                rootConfig.huichiParam.outTableOutIndex = -1;
+                rootConfig.syncParam.inTableInIndex = -1;
+                rootConfig.syncParam.inTableOutIndex = -1;
+                rootConfig.syncParam.outTableInIndex = -1;
+                rootConfig.syncParam.outTableOutIndex = -1;
             } else {
-                getNextSyncTime(rootConfig.huichiParam.from, 5);
-                rootConfig.huichiParam.to = syncResult.syncTime;
+                getNextSyncTime(rootConfig.syncParam.from, 5);
+                rootConfig.syncParam.to = syncResult.syncTime;
             }
-            huichiParam.inTableInIndex = rootConfig.huichiParam.inTableInIndex;
-            huichiParam.inTableOutIndex = rootConfig.huichiParam.inTableOutIndex;
-            huichiParam.outTableInIndex = rootConfig.huichiParam.outTableInIndex;
-            huichiParam.outTableOutIndex = rootConfig.huichiParam.outTableOutIndex;
+            syncParam.inTableInIndex = rootConfig.syncParam.inTableInIndex;
+            syncParam.inTableOutIndex = rootConfig.syncParam.inTableOutIndex;
+            syncParam.outTableInIndex = rootConfig.syncParam.outTableInIndex;
+            syncParam.outTableOutIndex = rootConfig.syncParam.outTableOutIndex;
         }
         save();
         return syncResult.isOldTime;
@@ -227,9 +218,7 @@ public class Config {
 
     public static boolean syncParamUpdate(boolean firstTime){
         boolean isOldTime = true;
-        if (rootConfig.databaseType.equals("huichi")) {
-            isOldTime = huichiParamUpdate(firstTime);
-        }
+        isOldTime = paramUpdate(firstTime);
         return isOldTime;
 //        System.out.println("from:" + rootConfig.syncTime.from + " to:" + rootConfig.syncTime.to);
     }

@@ -3,7 +3,6 @@ package com.bitselink.config;
 public class Root {
     public Site site;
     public Cloud cloud;
-    public HuichiParam huichiParam;
     public SyncParam syncParam;
     public String register;
     public String databaseType;
@@ -34,14 +33,6 @@ public class Root {
 
     public void setRegister(String register) {
         this.register = register;
-    }
-
-    public HuichiParam getHuichiParam() {
-        return huichiParam;
-    }
-
-    public void setHuichiParam(HuichiParam huichiParam) {
-        this.huichiParam = huichiParam;
     }
 
     public Site getSite() {

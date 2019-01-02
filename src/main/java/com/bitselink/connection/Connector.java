@@ -94,15 +94,24 @@ public class Connector {
                 connectTest();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogHelper.warn("connectDbMybatis()异常:" , e);
         }
         return isConnected;
     }
 
     private boolean connectTest() {
+        String connectTest;
+        switch (Config.rootConfig.databaseType) {
+            case "bosiny": {
+                connectTest = "mybatis.parkingDataMapper.bosiniTest";
+            }
+            break;
+            default:
+                connectTest = "mybatis.parkingDataMapper.connectTest";
+        }
         SqlSession session = sqlSessionFactory.openSession();
         try {
-            session.selectOne("mybatis.parkingDataMapper.connectTest");
+            session.selectOne(connectTest);
             isConnected = true;
         } catch (PersistenceException pe) {
             LogHelper.warn("连接数据库失败：" + pe.getMessage());
@@ -152,84 +161,85 @@ public class Connector {
         Map condition=new HashMap();
 
         condition.put("devNo", Config.rootConfig.register);
-        if (Config.rootConfig.huichiParam.inTableInIndex > 0
-                && Config.rootConfig.huichiParam.method.equals("id")
+        if (Config.rootConfig.syncParam.inTableInIndex > 0
+                && Config.rootConfig.syncParam.method.equals("id")
                 && !Config.syncResult.isOldTime){
-            condition.put("recordId", Config.rootConfig.huichiParam.inTableInIndex);
-            LogHelper.info("抓取停车场入场数据1：inTableInIndex(recordId) > " + Config.rootConfig.huichiParam.inTableInIndex);
+            condition.put("recordId", Config.rootConfig.syncParam.inTableInIndex);
+            LogHelper.info("抓取停车场入场数据1：inTableInIndex(recordId) > " + Config.rootConfig.syncParam.inTableInIndex);
         }
         else {
 //            condition.put("timeFrom", "2018-07-10 10:00:00");
-            condition.put("timeFrom", Config.rootConfig.huichiParam.from);
+            condition.put("timeFrom", Config.rootConfig.syncParam.from);
 //            condition.put("timeTo", "2018-08-10 10:00:00");
-            condition.put("timeTo", Config.rootConfig.huichiParam.to);
-            LogHelper.info("抓取停车场入场数据1：from=" + Config.rootConfig.huichiParam.from + " to=" + Config.rootConfig.huichiParam.to);
+            condition.put("timeTo", Config.rootConfig.syncParam.to);
+            LogHelper.info("抓取停车场入场数据1：from=" + Config.rootConfig.syncParam.from + " to=" + Config.rootConfig.syncParam.to);
         }
         rstInTableInIndex = checkParkingDataWithCondition("mybatis.parkingDataMapper.comeDataInComeTable", condition);
         if(!isConnected) {
             return syncHistory;
         }
-
         condition.clear();
+
         condition.put("devNo", Config.rootConfig.register);
-        if (Config.rootConfig.huichiParam.outTableInIndex > 0
-                && Config.rootConfig.huichiParam.method.equals("id")
+        if (Config.rootConfig.syncParam.outTableOutIndex > 0
+                && Config.rootConfig.syncParam.method.equals("id")
                 && !Config.syncResult.isOldTime){
-            condition.put("recordId", Config.rootConfig.huichiParam.outTableInIndex);
-            LogHelper.info("抓取停车场入场数据2：outTableInIndex(recordId) > " + Config.rootConfig.huichiParam.outTableInIndex);
+            condition.put("recordId", Config.rootConfig.syncParam.outTableOutIndex);
+            LogHelper.info("抓取停车场出场数据2：outTableOutIndex(recordId) > " + Config.rootConfig.syncParam.outTableOutIndex);
         }
         else {
-            condition.put("timeFrom", Config.rootConfig.huichiParam.from);
-            condition.put("timeTo", Config.rootConfig.huichiParam.to);
-            LogHelper.info("抓取停车场入场数据2：from=" + Config.rootConfig.huichiParam.from + " to=" + Config.rootConfig.huichiParam.to);
-        }
-        rstOutTableInIndex = checkParkingDataWithCondition("mybatis.parkingDataMapper.comeDataInOutTable", condition);
-        if(!isConnected) {
-            return syncHistory;
-        }
-
-        condition.clear();
-        condition.put("devNo", Config.rootConfig.register);
-        if (Config.rootConfig.huichiParam.inTableOutIndex > 0
-                && Config.rootConfig.huichiParam.method.equals("id")
-                && !Config.syncResult.isOldTime){
-            condition.put("recordId", Config.rootConfig.huichiParam.inTableOutIndex);
-            LogHelper.info("抓取停车场出场数据1：inTableOutIndex(recordId) > " + Config.rootConfig.huichiParam.inTableOutIndex);
-        }
-        else {
-            condition.put("timeFrom", Config.rootConfig.huichiParam.from);
-            condition.put("timeTo", Config.rootConfig.huichiParam.to);
-            LogHelper.info("抓取停车场出场数据1：from=" + Config.rootConfig.huichiParam.from + " to=" + Config.rootConfig.huichiParam.to);
-        }
-        rstInTableOutIndex = checkParkingDataWithCondition("mybatis.parkingDataMapper.outDataInComeTable", condition);
-        if(!isConnected) {
-            return syncHistory;
-        }
-
-        condition.clear();
-        condition.put("devNo", Config.rootConfig.register);
-        if (Config.rootConfig.huichiParam.outTableOutIndex > 0
-                && Config.rootConfig.huichiParam.method.equals("id")
-                && !Config.syncResult.isOldTime){
-            condition.put("recordId", Config.rootConfig.huichiParam.outTableOutIndex);
-            LogHelper.info("抓取停车场出场数据2：outTableOutIndex(recordId) > " + Config.rootConfig.huichiParam.outTableOutIndex);
-        }
-        else {
-            condition.put("timeFrom", Config.rootConfig.huichiParam.from);
-            condition.put("timeTo", Config.rootConfig.huichiParam.to);
-            LogHelper.info("抓取停车场出场数据2：from=" + Config.rootConfig.huichiParam.from + " to=" + Config.rootConfig.huichiParam.to);
+            condition.put("timeFrom", Config.rootConfig.syncParam.from);
+            condition.put("timeTo", Config.rootConfig.syncParam.to);
+            LogHelper.info("抓取停车场出场数据2：from=" + Config.rootConfig.syncParam.from + " to=" + Config.rootConfig.syncParam.to);
         }
         rstOutTableOutIndex = checkParkingDataWithCondition("mybatis.parkingDataMapper.outDataInOutTable", condition);
         if(!isConnected) {
             return syncHistory;
         }
 
-        Config.huichiParam.inTableInIndex = Math.max(Config.huichiParam.inTableInIndex, rstInTableInIndex);
-        Config.huichiParam.outTableInIndex = Math.max(Config.huichiParam.outTableInIndex, rstOutTableInIndex);
-        Config.huichiParam.outTableOutIndex = Math.max(Config.huichiParam.outTableOutIndex, rstOutTableOutIndex);
-        Config.huichiParam.inTableOutIndex = Math.max(Config.huichiParam.inTableOutIndex, rstInTableOutIndex);
+        Config.syncParam.inTableInIndex = Math.max(Config.syncParam.inTableInIndex, rstInTableInIndex);
+        Config.syncParam.outTableInIndex = Math.max(Config.syncParam.outTableInIndex, rstOutTableInIndex);
+        Config.syncParam.outTableOutIndex = Math.max(Config.syncParam.outTableOutIndex, rstOutTableOutIndex);
+        Config.syncParam.inTableOutIndex = Math.max(Config.syncParam.inTableOutIndex, rstInTableOutIndex);
         //没有查到数据，更新查询条件
         if (rstInTableInIndex < 0 && rstOutTableInIndex < 0 && rstOutTableOutIndex < 0 && rstInTableOutIndex < 0){
+            //如果是同步历史数据
+            if (Config.syncParamUpdate(false)) {
+                syncHistory = true;
+            }
+        }
+        return syncHistory;
+    }
+
+    private boolean bosinyParkingDataCheck() {
+        boolean syncHistory = false;
+        long rstInTableInIndex = -1;
+        parkingGroupData.getBody().clear();
+        Map condition=new HashMap();
+
+        condition.put("devNo", Config.rootConfig.register);
+        if (Config.rootConfig.syncParam.inTableInIndex > 0
+                && Config.rootConfig.syncParam.method.equals("id")
+                && !Config.syncResult.isOldTime){
+            condition.put("recordId", Config.rootConfig.syncParam.inTableInIndex);
+            LogHelper.info("抓取停车场数据：parkingTableId(recordId) > " + Config.rootConfig.syncParam.inTableInIndex);
+        }
+        else {
+//            condition.put("timeFrom", "2018-07-10 10:00:00");
+            condition.put("timeFrom", Config.rootConfig.syncParam.from);
+//            condition.put("timeTo", "2018-08-10 10:00:00");
+            condition.put("timeTo", Config.rootConfig.syncParam.to);
+            LogHelper.info("抓取停车场数据：from=" + Config.rootConfig.syncParam.from + " to=" + Config.rootConfig.syncParam.to);
+        }
+        rstInTableInIndex = checkParkingDataWithCondition("mybatis.parkingDataMapper.recordDataSingleTable", condition);
+        if(!isConnected) {
+            return syncHistory;
+        }
+        condition.clear();
+
+        Config.syncParam.inTableInIndex = Math.max(Config.syncParam.inTableInIndex, rstInTableInIndex);
+        //没有查到数据，更新查询条件
+        if (rstInTableInIndex < 0){
             //如果是同步历史数据
             if (Config.syncParamUpdate(false)) {
                 syncHistory = true;
@@ -243,6 +253,8 @@ public class Connector {
         boolean syncHistory = false;
         if (Config.rootConfig.databaseType.equals("huichi")) {
             syncHistory = huichiParkingDataCheck();
+        } else if (Config.rootConfig.databaseType.equals("bosiny")) {
+            syncHistory = bosinyParkingDataCheck();
         }
         return syncHistory;
     }

@@ -337,7 +337,7 @@ public class helloform implements ICallBack {
             } catch (Exception db_err) {
                 connectInfo = db_err.getMessage();
                 labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
-                //db_err.printStackTrace();
+                LogHelper.warn("doConnectTest()异常:", db_err);
             }
         } else if (selectDatabase.equals("Mysql")) {
             //MYSQL
@@ -354,7 +354,7 @@ public class helloform implements ICallBack {
             } catch (Exception db_err) {
                 connectInfo = db_err.getMessage();
                 labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
-                //db_err.printStackTrace();
+                LogHelper.warn("doConnectTest()异常:", db_err);
             }
         } else if (selectDatabase.equals("Oracle")) {
             //Oracle
@@ -371,7 +371,7 @@ public class helloform implements ICallBack {
             } catch (Exception db_err) {
                 connectInfo = db_err.getMessage();
                 labelConnectInfo.setText(resourceBundle.getString("msg.connectFault"));
-                //db_err.printStackTrace();
+                LogHelper.warn("doConnectTest()异常:", db_err);
             }
         } else {
             selectDatabase = "Unknown database";
@@ -856,7 +856,7 @@ public class helloform implements ICallBack {
 
             }
         } catch (SocketException e1) {
-            e1.printStackTrace();
+            LogHelper.warn("showMacAddr()异常:", e1);
         }
     }
 
@@ -877,7 +877,7 @@ public class helloform implements ICallBack {
                 macStr += str.toUpperCase();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LogHelper.warn("getMacAddr()异常:", e);
         }
         return macStr;
     }
@@ -903,13 +903,13 @@ public class helloform implements ICallBack {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LogHelper.warn("getUnixMACAddress()异常:", e);
         } finally {
             if (bufferedReader != null) {
                 try {
                     bufferedReader.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogHelper.warn("getUnixMACAddress()异常:", e);
                 }
                 bufferedReader = null;
                 process = null;
@@ -944,7 +944,7 @@ public class helloform implements ICallBack {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogHelper.warn("checkActiveKey()异常:", e);
         }
         LogHelper.error("设备激活失败");
         return false;
@@ -969,7 +969,7 @@ public class helloform implements ICallBack {
             }
             sf.deleteOnExit();
         } catch (Exception e) {
-            e.printStackTrace();
+            LogHelper.warn("checkLock()异常:", e);
         }
         return false;
     }
@@ -1012,7 +1012,7 @@ public class helloform implements ICallBack {
         });
     }
 
-    static public final String SOFT_VER = "V1.1(b)";
+    static public final String SOFT_VER = "V1.1(d)";
     static private final String IP_PATTERN = "^(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])$";
     static private final String PORT_PATTERN = "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5])$";
     static private final String PHONE_PATTERN = "^1(3|4|5|7|8)\\d{9}$";

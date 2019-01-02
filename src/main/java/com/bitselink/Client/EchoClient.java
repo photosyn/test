@@ -189,6 +189,7 @@ public class EchoClient {
     public void sendVersionData(){
         if (channel != null && channel.isActive() && !Config.rootConfig.register.isEmpty()) {
             versionData.getHead().get(0).generateIdAndTime();
+            versionData.getBody().get(0).setDevno(Config.rootConfig.register);
             String sendStr = encoder.encode(versionData);
             channel.writeAndFlush(Unpooled.copiedBuffer(sendStr, CharsetUtil.UTF_8));
         }
